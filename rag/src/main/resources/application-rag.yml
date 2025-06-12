@@ -1,0 +1,294 @@
+rag:
+  vector:
+    # 默认嵌入模型
+    default-embedding-model: text-embedding-ada-002
+    # 相似度阈值
+    similarity-threshold: 0.7
+    # 最大返回结果数
+    max-results: 100
+    # 向量维度配置
+    dimensions:
+      text-embedding-ada-002: 1536
+      text-embedding-3-small: 1536
+      text-embedding-3-large: 3072
+      sentence-transformers/all-mpnet-base-v2: 768
+      sentence-transformers/all-minilm-l6-v2: 384
+  
+  # AI配置（用于关键词搜索）
+  ai:
+    # 默认AI模型
+    model: gpt-3.5-turbo
+    # 温度参数
+    temperature: 0.3
+    # 最大token数
+    max-tokens: 1000
+    # API配置
+    api:
+      # API密钥
+      key: ${AI_API_KEY:}
+      # API基础URL
+      base-url: ${AI_BASE_URL:https://api.openai.com}
+      # 请求超时时间（秒）
+      timeout: 30
+      # 最大重试次数
+      max-retries: 3
+    # 提示词模板配置
+    prompts:
+      # 关键词提取提示词模板文件
+      keyword-extraction: classpath:prompts/keyword_extraction.txt
+      # 文档排序提示词模板文件
+      document-ranking: classpath:prompts/document_ranking.txt
+      # 匹配增强提示词模板文件
+      matching-enhancement: classpath:prompts/matching_enhancement.txt
+  
+  search:
+    # 关键词搜索配置
+    keyword:
+      # 最小词长度
+      min-word-length: 2
+      # 最大关键词数量
+      max-keywords: 10
+      # 关键词匹配增强因子
+      boost-factor: 0.2
+      # 是否启用AI增强
+      enable-ai: true
+      # AI模式配置
+      ai-mode:
+        # AI关键词提取
+        extraction: true
+        # AI文档排序
+        ranking: true
+        # AI匹配增强
+        enhancement: true
+        # 批量处理大小
+        batch-size: 5
+      # 降级策略
+      fallback:
+        # 关键词提取降级
+        extraction: simple_split
+        # 文档排序降级
+        ranking: score_based
+        # 匹配增强降级
+        enhancement: traditional
+      # 全文搜索引擎配置
+      fulltext:
+        # 引擎类型: elasticsearch, solr, lucene
+        engine: elasticsearch
+        # Elasticsearch配置
+        elasticsearch:
+          hosts: ${ELASTICSEARCH_HOSTS:localhost:9200}
+          index-prefix: rag_documents
+          highlight-enabled: true
+          max-results: 100
+        # 分词器配置
+        tokenizer:
+          # 中文分词器: jieba, hanlp, ik
+          chinese: jieba
+          # 英文分词器: standard, keyword, whitespace
+          english: standard
+      # 停用词配置
+      stopwords:
+        # 是否启用停用词过滤
+        enabled: true
+        # 自定义停用词文件路径
+        custom-file: classpath:stopwords/custom_stopwords.txt
+        # 停用词更新策略: static, dynamic
+        update-strategy: static
+    
+    # 重排序配置
+    rerank:
+      # 默认重排序策略: ai, cross_encoder, simple
+      default-strategy: ai
+      # 是否启用降级机制
+      enable-fallback: true
+      # Cross-Encoder模型名称
+      cross-encoder-model: cross-encoder/ms-marco-MiniLM-L-6-v2
+      # AI重排序参数
+      ai:
+        # 最大处理文档数量
+        max-documents: 50
+        # 内容截取长度
+        content-truncate-length: 200
+        # 是否包含原始分数
+        include-original-score: true
+      # Cross-Encoder参数
+      cross-encoder:
+        # 内容截取长度
+        content-truncate-length: 300
+        # 批量处理大小
+        batch-size: 10
+      # 简单算法参数
+      simple:
+        # 词频权重
+        term-frequency-weight: 0.4
+        # 覆盖率权重
+        coverage-weight: 0.4
+        # 位置因子权重
+        position-weight: 0.2
+        # 原始分数混合比例
+        original-score-ratio: 0.7
+    
+    # 混合搜索权重
+    hybrid:
+      keyword-weight: 0.3
+      semantic-weight: 0.7
+      enable-rerank: true
+    
+    # 智能搜索配置
+    intelligent:
+      # 是否启用AI意图检测
+      enable-ai-intent: true
+      # AI意图检测配置
+      ai-intent:
+        # AI模型配置
+        model: gpt-3.5-turbo
+        # 温度参数（意图检测需要更低的温度确保稳定性）
+        temperature: 0.2
+        # 最大token数
+        max-tokens: 500
+        # 意图检测提示词模板
+        prompt-template: classpath:prompts/intent_detection.txt
+        # 策略选择提示词模板
+        strategy-prompt-template: classpath:prompts/strategy_selection.txt
+        # 支持的意图类型列表
+        supported-intents:
+          - definition
+          - explanation
+          - how_to
+          - example
+          - comparison
+          - analysis
+          - summary
+          - factual
+          - opinion
+          - general_qa
+        # 批量处理配置
+        batch-processing:
+          enabled: true
+          batch-size: 3
+          timeout-seconds: 10
+      # 意图检测阈值
+      intent-confidence-threshold: 0.8
+      # 降级策略配置
+      fallback:
+        # 意图检测失败时的降级策略
+        intent-detection: rule_based
+        # 策略选择失败时的降级策略
+        strategy-selection: rule_based
+        # 完全失败时的默认策略
+        default-strategy: hybrid
+      # 策略选择规则（AI和规则方法的参考）
+      strategy-rules:
+        definition: semantic
+        explanation: semantic
+        how_to: keyword
+        example: keyword
+        comparison: hybrid
+        analysis: hybrid
+        summary: semantic
+        factual: keyword
+        opinion: semantic
+        general_qa: hybrid
+      # 智能合并配置
+      intelligent-merge:
+        # 是否启用智能合并
+        enabled: true
+        # 合并算法: weighted_round_robin, score_based, diversity_aware
+        algorithm: weighted_round_robin
+        # 去重策略
+        deduplication:
+          # 去重key生成策略: simple, content_hash, semantic_similarity
+          key-strategy: simple
+          # 相似度阈值（用于语义去重）
+          similarity-threshold: 0.9
+        # 多样性保护
+        diversity:
+          # 是否启用多样性保护
+          enabled: true
+          # 最小多样性分数
+          min-diversity-score: 0.7
+      # 缓存配置
+      cache:
+        # 意图检测结果缓存
+        intent-detection:
+          enabled: true
+          ttl-minutes: 60
+          max-size: 1000
+        # 策略选择结果缓存
+        strategy-selection:
+          enabled: true
+          ttl-minutes: 30
+          max-size: 500
+      # 监控和指标
+      monitoring:
+        # 是否启用性能监控
+        enabled: true
+        # AI调用监控
+        ai-calls:
+          # 记录AI调用延迟
+          track-latency: true
+          # 记录AI调用成功率
+          track-success-rate: true
+          # 异常调用告警阈值
+          error-rate-threshold: 0.1
+        # 意图检测准确性监控
+        intent-accuracy:
+          # 是否启用准确性评估
+          enabled: false
+          # 评估样本比例
+          sample-rate: 0.1
+
+  generation:
+    # 答案生成配置
+    answer:
+      # 默认温度参数
+      default-temperature: 0.7
+      # 最大token数
+      max-tokens: 2048
+      # 意图相关的温度调整
+      temperature-by-intent:
+        definition: 0.3
+        factual: 0.2
+        creative: 0.8
+        analysis: 0.5
+    
+    # 摘要生成配置
+    summary:
+      # 默认摘要类型: extractive, abstractive, hybrid
+      default-type: hybrid
+      # 默认摘要长度
+      default-length: 500
+      # 质量评估阈值
+      quality-threshold: 0.6
+
+  # Spring AI集成配置
+  spring-ai:
+    # OpenAI配置
+    openai:
+      api-key: ${OPENAI_API_KEY:}
+      base-url: ${OPENAI_BASE_URL:https://api.openai.com}
+      embedding-model: text-embedding-ada-002
+      chat-model: gpt-3.5-turbo
+    
+    # 向量数据库配置
+    vectorstore:
+      # 类型: chroma, pinecone, weaviate, redis
+      type: chroma
+      # Chroma配置
+      chroma:
+        url: ${CHROMA_URL:http://localhost:8000}
+        collection-name: ${CHROMA_COLLECTION:rag_documents}
+      # Pinecone配置
+      pinecone:
+        api-key: ${PINECONE_API_KEY:}
+        environment: ${PINECONE_ENVIRONMENT:}
+        index-name: ${PINECONE_INDEX:rag-index}
+
+# 日志配置
+logging:
+  level:
+    com.suiyue.rag.service.retrieval: DEBUG
+    com.suiyue.rag.service.generation: DEBUG
+    com.suiyue.rag.service.rerank: DEBUG
+    com.suiyue.rag.service.search: INFO
+    org.springframework.ai: INFO 

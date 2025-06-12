@@ -1,4 +1,4 @@
-package cn.mojoup.ai.app.controller;
+package cn.mojoup.ai.rag.controller;
 
 import cn.mojoup.ai.rag.domain.*;
 import cn.mojoup.ai.rag.service.RagQueryService;
