@@ -1,0 +1,77 @@
+# 文件上传模块配置
+app:
+  upload:
+    # 存储类型: local/minio
+    storage-type: local
+    # 单个文件最大大小 (10MB)
+    max-file-size: 10485760
+    # 最大请求大小 (50MB)
+    max-request-size: 52428800
+    # 允许的文件扩展名
+    allowed-extensions:
+      - jpg
+      - jpeg
+      - png
+      - gif
+      - bmp
+      - webp
+      - pdf
+      - doc
+      - docx
+      - xls
+      - xlsx
+      - ppt
+      - pptx
+      - txt
+      - md
+      - json
+      - xml
+      - csv
+      - zip
+      - rar
+      - 7z
+      - tar
+      - gz
+    # 本地存储配置
+    local:
+      # 存储根目录
+      root-path: ./uploads
+      # URL前缀
+      url-prefix: /files
+      # 是否按日期分目录
+      date-folder: true
+    # MinIO存储配置
+    minio:
+      # 服务端点
+      endpoint: http://localhost:9000
+      # 访问密钥
+      access-key: minioadmin
+      # 秘密密钥
+      secret-key: minioadmin
+      # 默认存储桶
+      bucket-name: uploads
+      # 是否自动创建存储桶
+      auto-create-bucket: true
+      # URL过期时间（秒）7天
+      url-expiry: 604800
+
+# Spring配置
+spring:
+  servlet:
+    multipart:
+      # 启用multipart上传
+      enabled: true
+      # 单个文件最大大小
+      max-file-size: 10MB
+      # 最大请求大小
+      max-request-size: 50MB
+      # 文件大小阈值，当大于这个阈值时将写入到临时文件中
+      file-size-threshold: 1MB
+      # 上传文件的临时目录
+      location: ${java.io.tmpdir}
+
+# 日志配置
+logging:
+  level:
+    cn.mojoup.ai.upload: DEBUG
+    io.minio: INFO 
