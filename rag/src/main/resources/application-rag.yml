@@ -287,8 +287,8 @@ rag:
 # 日志配置
 logging:
   level:
-    com.suiyue.rag.service.retrieval: DEBUG
-    com.suiyue.rag.service.generation: DEBUG
-    com.suiyue.rag.service.rerank: DEBUG
-    com.suiyue.rag.service.search: INFO
+    cn.mojoup.ai.rag.service.retrieval: DEBUG
+    cn.mojoup.ai.rag.service.generation: DEBUG
+    cn.mojoup.ai.rag.service.rerank: DEBUG
+    cn.mojoup.ai.rag.service.search: INFO
     org.springframework.ai: INFO 

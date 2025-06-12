@@ -70,8 +70,16 @@ spring:
       # 上传文件的临时目录
       location: ${java.io.tmpdir}
 
+# Spring Security配置（开发环境）
+  security:
+    user:
+      name: admin
+      password: admin123
+      roles: ADMIN
+
 # 日志配置
 logging:
   level:
     cn.mojoup.ai.upload: DEBUG
-    io.minio: INFO 
+    io.minio: INFO
+    org.springframework.security: DEBUG 

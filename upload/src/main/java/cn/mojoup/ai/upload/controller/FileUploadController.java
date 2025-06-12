@@ -3,6 +3,7 @@ package cn.mojoup.ai.upload.controller;
 import cn.mojoup.ai.upload.domain.UploadRequest;
 import cn.mojoup.ai.upload.domain.UploadResponse;
 import cn.mojoup.ai.upload.service.FileUploadService;
+import cn.mojoup.ai.upload.util.SecurityUtils;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.media.Content;
@@ -25,6 +26,7 @@ import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 
 /**
  * 文件上传控制器
@@ -52,8 +54,6 @@ public class FileUploadController {
     public ResponseEntity<UploadResponse> uploadSingleFile(
             @Parameter(description = "上传的文件", required = true)
             @RequestParam("file") MultipartFile file,
-            @Parameter(description = "上传用户ID")
-            @RequestParam(value = "uploadUserId", required = false) String uploadUserId,
             @Parameter(description = "文件标签")
             @RequestParam(value = "tags", required = false) String tags,
             @Parameter(description = "自定义存储路径")
@@ -63,8 +63,11 @@ public class FileUploadController {
             @Parameter(description = "是否生成唯一文件名")
             @RequestParam(value = "generateUniqueName", defaultValue = "true") Boolean generateUniqueName) {
         
+        // 从Spring Security获取当前用户ID
+        String currentUserId = SecurityUtils.getCurrentUserId();
+        
         UploadRequest request = UploadRequest.builder()
-                .uploadUserId(uploadUserId)
+                .uploadUserId(currentUserId)
                 .tags(tags)
                 .customPath(customPath)
                 .overwrite(overwrite)
@@ -88,8 +91,6 @@ public class FileUploadController {
     public ResponseEntity<UploadResponse> uploadMultipleFiles(
             @Parameter(description = "上传的文件列表", required = true)
             @RequestParam("files") MultipartFile[] files,
-            @Parameter(description = "上传用户ID")
-            @RequestParam(value = "uploadUserId", required = false) String uploadUserId,
             @Parameter(description = "文件标签")
             @RequestParam(value = "tags", required = false) String tags,
             @Parameter(description = "自定义存储路径")
@@ -99,8 +100,11 @@ public class FileUploadController {
             @Parameter(description = "是否生成唯一文件名")
             @RequestParam(value = "generateUniqueName", defaultValue = "true") Boolean generateUniqueName) {
         
+        // 从Spring Security获取当前用户ID
+        String currentUserId = SecurityUtils.getCurrentUserId();
+        
         UploadRequest request = UploadRequest.builder()
-                .uploadUserId(uploadUserId)
+                .uploadUserId(currentUserId)
                 .tags(tags)
                 .customPath(customPath)
                 .overwrite(overwrite)
@@ -113,31 +117,111 @@ public class FileUploadController {
         return ResponseEntity.ok(response);
     }
     
-    @GetMapping("/download/{**relativePath}")
-    @Operation(summary = "文件下载", description = "根据相对路径下载文件")
+
+    
+    @DeleteMapping("/id/{fileId}")
+    @Operation(summary = "根据文件ID删除文件", description = "根据文件UUID删除文件（推荐使用）")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "删除成功"),
+            @ApiResponse(responseCode = "404", description = "文件不存在"),
+            @ApiResponse(responseCode = "500", description = "服务器内部错误")
+    })
+    public ResponseEntity<Map<String, Object>> deleteFileById(
+            @Parameter(description = "文件ID", required = true)
+            @PathVariable String fileId) {
+        
+        try {
+            boolean deleted = fileUploadService.deleteFileById(fileId);
+            
+            if (deleted) {
+                return ResponseEntity.ok(Map.of(
+                        "success", true,
+                        "message", "File deleted successfully",
+                        "fileId", fileId
+                ));
+            } else {
+                return ResponseEntity.ok(Map.of(
+                        "success", false,
+                        "message", "File not found or failed to delete",
+                        "fileId", fileId
+                ));
+            }
+            
+        } catch (Exception e) {
+            log.error("Failed to delete file: {}", fileId, e);
+            return ResponseEntity.internalServerError().body(Map.of(
+                    "success", false,
+                    "message", "Internal server error: " + e.getMessage(),
+                    "fileId", fileId
+            ));
+        }
+    }
+    
+
+    
+
+    
+    @GetMapping("/info/id/{fileId}")
+    @Operation(summary = "根据文件ID获取文件信息", description = "根据文件UUID获取详细的文件信息")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "获取成功"),
+            @ApiResponse(responseCode = "404", description = "文件不存在"),
+            @ApiResponse(responseCode = "500", description = "服务器内部错误")
+    })
+    public ResponseEntity<Map<String, Object>> getFileInfoById(
+            @Parameter(description = "文件ID", required = true)
+            @PathVariable String fileId) {
+        
+        try {
+            Optional<cn.mojoup.ai.upload.domain.FileInfo> fileInfoOpt = fileUploadService.getFileInfoById(fileId);
+            
+            if (fileInfoOpt.isEmpty()) {
+                return ResponseEntity.notFound().build();
+            }
+            
+            return ResponseEntity.ok(Map.of(
+                    "success", true,
+                    "fileInfo", fileInfoOpt.get()
+            ));
+            
+        } catch (Exception e) {
+            log.error("Failed to get file info: {}", fileId, e);
+            return ResponseEntity.internalServerError().body(Map.of(
+                    "success", false,
+                    "fileId", fileId,
+                    "error", e.getMessage()
+            ));
+        }
+    }
+    
+    @GetMapping("/download/id/{fileId}")
+    @Operation(summary = "根据文件ID下载文件", description = "根据文件UUID下载文件（推荐使用）")
     @ApiResponses(value = {
             @ApiResponse(responseCode = "200", description = "下载成功"),
             @ApiResponse(responseCode = "404", description = "文件不存在"),
             @ApiResponse(responseCode = "500", description = "服务器内部错误")
     })
-    public ResponseEntity<Resource> downloadFile(
-            @Parameter(description = "文件相对路径", required = true)
-            @PathVariable String relativePath,
+    public ResponseEntity<Resource> downloadFileById(
+            @Parameter(description = "文件ID", required = true)
+            @PathVariable String fileId,
             @Parameter(description = "是否以附件方式下载")
             @RequestParam(value = "attachment", defaultValue = "false") Boolean attachment) {
         
         try {
-            Resource resource = fileUploadService.getFileResource(relativePath);
+            Resource resource = fileUploadService.getFileResourceById(fileId);
+            Optional<cn.mojoup.ai.upload.domain.FileInfo> fileInfoOpt = fileUploadService.getFileInfoById(fileId);
             
-            if (resource == null || !resource.exists()) {
+            if (resource == null || !resource.exists() || fileInfoOpt.isEmpty()) {
                 return ResponseEntity.notFound().build();
             }
+            
+            cn.mojoup.ai.upload.domain.FileInfo fileInfo = fileInfoOpt.get();
             
             // 构建响应头
             HttpHeaders headers = new HttpHeaders();
             
             // 设置文件名（支持中文）
-            String filename = getFilenameFromPath(relativePath);
+            String filename = fileInfo.getOriginalFileName();
             String encodedFilename = URLEncoder.encode(filename, StandardCharsets.UTF_8.toString());
             
             if (attachment) {
@@ -149,7 +233,8 @@ public class FileUploadController {
             }
             
             // 设置内容类型
-            headers.add(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_OCTET_STREAM_VALUE);
+            headers.add(HttpHeaders.CONTENT_TYPE, 
+                    fileInfo.getContentType() != null ? fileInfo.getContentType() : MediaType.APPLICATION_OCTET_STREAM_VALUE);
             
             return ResponseEntity.ok()
                     .headers(headers)
@@ -159,108 +244,72 @@ public class FileUploadController {
             log.error("Failed to encode filename", e);
             return ResponseEntity.internalServerError().build();
         } catch (Exception e) {
-            log.error("Failed to download file: {}", relativePath, e);
+            log.error("Failed to download file: {}", fileId, e);
             return ResponseEntity.internalServerError().build();
         }
     }
     
-    @DeleteMapping("/{**relativePath}")
-    @Operation(summary = "删除文件", description = "根据相对路径删除文件")
-    @ApiResponses(value = {
-            @ApiResponse(responseCode = "200", description = "删除成功"),
-            @ApiResponse(responseCode = "404", description = "文件不存在"),
-            @ApiResponse(responseCode = "500", description = "服务器内部错误")
-    })
-    public ResponseEntity<Map<String, Object>> deleteFile(
-            @Parameter(description = "文件相对路径", required = true)
-            @PathVariable String relativePath) {
-        
-        try {
-            boolean deleted = fileUploadService.deleteFile(relativePath);
-            
-            if (deleted) {
-                return ResponseEntity.ok(Map.of(
-                        "success", true,
-                        "message", "File deleted successfully",
-                        "path", relativePath
-                ));
-            } else {
-                return ResponseEntity.ok(Map.of(
-                        "success", false,
-                        "message", "File not found or failed to delete",
-                        "path", relativePath
-                ));
-            }
-            
-        } catch (Exception e) {
-            log.error("Failed to delete file: {}", relativePath, e);
-            return ResponseEntity.internalServerError().body(Map.of(
-                    "success", false,
-                    "message", "Internal server error: " + e.getMessage(),
-                    "path", relativePath
-            ));
-        }
-    }
-    
-    @GetMapping("/exists/{**relativePath}")
-    @Operation(summary = "检查文件是否存在", description = "根据相对路径检查文件是否存在")
+    @GetMapping("/exists/id/{fileId}")
+    @Operation(summary = "根据文件ID检查文件是否存在", description = "根据文件UUID检查文件是否存在")
     @ApiResponses(value = {
             @ApiResponse(responseCode = "200", description = "检查成功"),
             @ApiResponse(responseCode = "500", description = "服务器内部错误")
     })
-    public ResponseEntity<Map<String, Object>> checkFileExists(
-            @Parameter(description = "文件相对路径", required = true)
-            @PathVariable String relativePath) {
+    public ResponseEntity<Map<String, Object>> checkFileExistsById(
+            @Parameter(description = "文件ID", required = true)
+            @PathVariable String fileId) {
         
         try {
-            boolean exists = fileUploadService.fileExists(relativePath);
+            boolean exists = fileUploadService.fileExistsById(fileId);
             
             return ResponseEntity.ok(Map.of(
                     "exists", exists,
-                    "path", relativePath
+                    "fileId", fileId
             ));
             
         } catch (Exception e) {
-            log.error("Failed to check file existence: {}", relativePath, e);
+            log.error("Failed to check file existence: {}", fileId, e);
             return ResponseEntity.internalServerError().body(Map.of(
                     "exists", false,
-                    "path", relativePath,
+                    "fileId", fileId,
                     "error", e.getMessage()
             ));
         }
     }
     
-    @GetMapping("/url/{**relativePath}")
-    @Operation(summary = "获取文件访问URL", description = "根据相对路径获取文件的访问URL")
+    @GetMapping("/url/id/{fileId}")
+    @Operation(summary = "根据文件ID获取文件访问URL", description = "根据文件UUID获取文件的访问URL")
     @ApiResponses(value = {
             @ApiResponse(responseCode = "200", description = "获取成功"),
             @ApiResponse(responseCode = "404", description = "文件不存在"),
             @ApiResponse(responseCode = "500", description = "服务器内部错误")
     })
-    public ResponseEntity<Map<String, Object>> getFileUrl(
-            @Parameter(description = "文件相对路径", required = true)
-            @PathVariable String relativePath) {
+    public ResponseEntity<Map<String, Object>> getFileUrlById(
+            @Parameter(description = "文件ID", required = true)
+            @PathVariable String fileId) {
         
         try {
-            if (!fileUploadService.fileExists(relativePath)) {
+            if (!fileUploadService.fileExistsById(fileId)) {
                 return ResponseEntity.notFound().build();
             }
             
-            String url = fileUploadService.getFileUrl(relativePath);
+            String url = fileUploadService.getFileUrlById(fileId);
             
             return ResponseEntity.ok(Map.of(
                     "url", url,
-                    "path", relativePath
+                    "fileId", fileId
             ));
             
         } catch (Exception e) {
-            log.error("Failed to get file URL: {}", relativePath, e);
+            log.error("Failed to get file URL: {}", fileId, e);
             return ResponseEntity.internalServerError().body(Map.of(
-                    "path", relativePath,
+                    "fileId", fileId,
                     "error", e.getMessage()
             ));
         }
     }
+    
+
     
     /**
      * 从路径中提取文件名

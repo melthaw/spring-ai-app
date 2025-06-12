@@ -53,24 +53,73 @@ app:
 
 ## API接口
 
+### 文件上传
 - `POST /api/upload/single` - 单个文件上传
 - `POST /api/upload/multiple` - 多个文件上传
-- `GET /api/upload/download/{path}` - 文件下载
-- `DELETE /api/upload/{path}` - 删除文件
-- `GET /api/upload/exists/{path}` - 检查文件存在
-- `GET /api/upload/url/{path}` - 获取文件URL
+
+### 基于UUID的安全操作
+- `GET /api/upload/info/id/{fileId}` - 根据文件ID获取文件信息
+- `GET /api/upload/download/id/{fileId}` - 根据文件ID下载文件
+- `DELETE /api/upload/id/{fileId}` - 根据文件ID删除文件
+- `GET /api/upload/exists/id/{fileId}` - 根据文件ID检查文件存在
+- `GET /api/upload/url/id/{fileId}` - 根据文件ID获取文件URL
+
+### 认证要求
+- 所有文件上传和操作接口都需要认证
+- 默认用户名：`admin`，密码：`admin123`
+- 使用HTTP Basic认证
 
 ## 使用示例
 
+### 基本使用
 ```java
 @Autowired
 private FileUploadService fileUploadService;
 
-// 获取文件资源
-Resource resource = fileUploadService.getFileResource("path/to/file.jpg");
+// 基于UUID的安全操作
+Optional<FileInfo> fileInfo = fileUploadService.getFileInfoById("file-uuid");
+Resource resource = fileUploadService.getFileResourceById("file-uuid");
+boolean exists = fileUploadService.fileExistsById("file-uuid");
+boolean deleted = fileUploadService.deleteFileById("file-uuid");
+```
 
-// 检查文件是否存在
-boolean exists = fileUploadService.fileExists("path/to/file.jpg");
+### API调用示例
+```bash
+# 上传单个文件（需要认证）
+curl -u admin:admin123 \
+  -X POST "http://localhost:8080/api/upload/single" \
+  -F "file=@test.jpg" \
+  -F "tags=image,test"
+
+# 获取文件信息
+curl -u admin:admin123 \
+  -X GET "http://localhost:8080/api/upload/info/id/{fileId}"
+
+# 下载文件
+curl -u admin:admin123 \
+  -X GET "http://localhost:8080/api/upload/download/id/{fileId}" \
+  -o downloaded_file.jpg
+
+# 删除文件
+curl -u admin:admin123 \
+  -X DELETE "http://localhost:8080/api/upload/id/{fileId}"
+```
+
+### 事件监听
+```java
+@Component
+public class CustomFileEventListener {
+    
+    @EventListener
+    @Async
+    public void handleFileUpload(FileUploadEvent event) {
+        if (event.getEventType() == FileUploadEvent.EventType.FILE_UPLOADED) {
+            FileInfo fileInfo = event.getFileInfo();
+            // 自定义处理逻辑：发送通知、更新缓存等
+            log.info("File uploaded: {}", fileInfo.getOriginalFileName());
+        }
+    }
+}
 ```
 
 ## 文件信息返回格式
