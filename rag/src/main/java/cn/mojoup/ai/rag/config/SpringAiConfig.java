@@ -1,10 +1,15 @@
 package cn.mojoup.ai.rag.config;
 
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.ai.embedding.EmbeddingModel;
+import org.springframework.ai.vectorstore.pgvector.PgVectorStore;
+import org.springframework.ai.vectorstore.VectorStore;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.Primary;
+import org.springframework.jdbc.core.JdbcTemplate;
 
 /**
  * Spring AI配置类
@@ -74,6 +79,17 @@ public class SpringAiConfig {
     //     ChromaApi chromaApi = new ChromaApi(chromaUrl);
     //     return new ChromaVectorStore(embeddingModel, chromaApi, chromaCollectionName);
     // }
+
+    /**
+     * 模拟的向量数据库Bean（用于开发测试）
+     */
+    @Bean
+    @Primary
+    @ConditionalOnProperty(name = "rag.spring-ai.openai.api-key", matchIfMissing = true)
+    public VectorStore mockVectorStoreForEmbedding() {
+        log.warn("使用模拟向量数据库 - 仅用于开发测试");
+        return new MockVectorStoreImpl();
+    }
 
     // TODO: 配置Pinecone向量数据库
     // @Bean
@@ -184,6 +200,70 @@ public class SpringAiConfig {
             for (int i = 0; i < Math.min(topK, 5); i++) {
                 results.add("模拟文档内容 " + (i + 1));
             }
+            return results;
+        }
+    }
+
+    /**
+     * 模拟向量数据库实现（VectorStore接口）
+     */
+    public static class MockVectorStoreImpl implements VectorStore {
+        
+        private final java.util.Map<String, org.springframework.ai.document.Document> documents = 
+                new java.util.concurrent.ConcurrentHashMap<>();
+
+        @Override
+        public void add(java.util.List<org.springframework.ai.document.Document> documents) {
+            log.debug("模拟添加 {} 个文档", documents.size());
+            for (org.springframework.ai.document.Document doc : documents) {
+                this.documents.put(doc.getId(), doc);
+            }
+        }
+
+        @Override
+        public java.util.Optional<Boolean> delete(java.util.List<String> idList) {
+            log.debug("模拟删除 {} 个文档", idList.size());
+            for (String id : idList) {
+                documents.remove(id);
+            }
+            return java.util.Optional.of(true);
+        }
+
+        @Override
+        public java.util.List<org.springframework.ai.document.Document> similaritySearch(String query) {
+            return similaritySearch(
+                org.springframework.ai.vectorstore.SearchRequest.query(query).withTopK(5)
+            );
+        }
+
+        @Override
+        public java.util.List<org.springframework.ai.document.Document> similaritySearch(
+                org.springframework.ai.vectorstore.SearchRequest request) {
+            log.debug("模拟相似性搜索: query={}, topK={}", request.getQuery(), request.getTopK());
+            
+            java.util.List<org.springframework.ai.document.Document> results = new java.util.ArrayList<>();
+            int count = 0;
+            for (org.springframework.ai.document.Document doc : documents.values()) {
+                if (count >= request.getTopK()) break;
+                results.add(doc);
+                count++;
+            }
+            
+            // 如果没有文档，返回模拟文档
+            if (results.isEmpty()) {
+                for (int i = 0; i < Math.min(request.getTopK(), 3); i++) {
+                    results.add(new org.springframework.ai.document.Document(
+                        "mock-doc-" + i,
+                        "这是模拟文档内容 " + (i + 1) + "，用于演示向量搜索功能。",
+                        java.util.Map.of(
+                            "source", "mock",
+                            "index", i,
+                            "similarity", 0.9 - (i * 0.1)
+                        )
+                    ));
+                }
+            }
+            
             return results;
         }
     }

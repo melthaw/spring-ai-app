@@ -1,0 +1,82 @@
+rag:
+  spring-ai:
+    openai:
+      api-key: ${OPENAI_API_KEY:}
+      base-url: https://api.openai.com
+      embedding-model: text-embedding-ada-002
+      chat-model: gpt-3.5-turbo
+    vectorstore:
+      type: pgvector  # 支持 pgvector, chroma, pinecone, redis
+      pgvector:
+        schema-name: public
+        table-name: vector_store
+        dimensions: 1536
+        distance-type: cosine
+        index-type: hnsw
+
+# 数据库配置（PGVector）
+spring:
+  datasource:
+    url: jdbc:postgresql://localhost:5432/suiyue_rag
+    username: postgres
+    password: postgres
+    driver-class-name: org.postgresql.Driver
+  
+  jpa:
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.PostgreSQLDialect
+    hibernate:
+      ddl-auto: update
+    show-sql: false
+
+# 文档嵌入配置
+document:
+  embedding:
+    # 支持的文件类型
+    supported-types:
+      - pdf
+      - doc
+      - docx
+      - txt
+      - md
+      - json
+      - xml
+      - csv
+      - html
+      - htm
+      - ppt
+      - pptx
+      - xls
+      - xlsx
+    
+    # 默认分块配置
+    chunking:
+      default-size: 1000
+      default-overlap: 200
+      max-size: 10000
+      min-size: 100
+    
+    # 嵌入模型配置
+    models:
+      default: text-embedding-ada-002
+      available:
+        - text-embedding-ada-002
+        - text-embedding-3-small
+        - text-embedding-3-large
+        - bge-large-zh
+        - m3e-base
+    
+    # 处理配置
+    processing:
+      max-concurrent-jobs: 5
+      timeout-minutes: 30
+      retry-attempts: 3
+      batch-size: 100
+
+# 日志配置
+logging:
+  level:
+    cn.mojoup.ai.rag: DEBUG
+    org.springframework.ai: DEBUG
+    org.postgresql: WARN 

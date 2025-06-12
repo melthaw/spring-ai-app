@@ -38,10 +38,99 @@ RAG查询系统是一个基于Spring AI框架的检索增强生成(RAG)系统，
 - **ConversationMessage**: 对话消息模型
 - 各种专门的请求/响应对象 (SimpleQuery, SemanticQuery, HybridQuery等)
 
-#### 4. 配置层 (Config)
+#### 4. 文档读取层 (Reader) 🆕
+- **DocumentReader**: 文档读取器统一接口，支持策略模式
+- **DocumentReaderFactory**: 读取器工厂，根据文件类型自动选择合适的读取器
+- **ReaderConfig**: 文档读取配置类，支持20+参数精细控制读取行为
+- **PdfDocumentReader**: PDF文档读取器，支持表格、图片、注释提取
+- **TextDocumentReader**: 文本文档读取器，支持txt、md格式和格式保持
+- **JsonDocumentReader**: JSON文档读取器，支持JSONPath和数据扁平化
+- **TikaDocumentReader**: Office文档读取器，支持doc、docx、ppt、xlsx等多种格式
+
+#### 5. 嵌入向量层 (Embedding) 🆕
+- **DocumentEmbeddingService**: 文档嵌入服务，整合文档读取、向量化和存储
+- **EmbeddingService**: 向量化服务，支持多种嵌入模型
+- **VectorStoreService**: 向量存储服务，基于PGVector的数据库操作
+- **DocumentEmbeddingController**: 嵌入功能REST API控制器
+
+#### 6. 配置层 (Config)
 - **SpringAiConfig**: Spring AI配置类，集成AI模型和向量数据库
 
 ## 功能特性
+
+### 🆕 文档读取与嵌入功能
+
+#### 文档读取器架构重构
+采用策略模式将文档读取逻辑模块化，支持多种文件格式和丰富的读取参数：
+
+**支持的文件格式**：
+- **PDF文档** (pdf) - 支持表格提取、图片提取、注释提取
+- **文本文档** (txt, md, text, markdown) - 支持格式保持、Markdown特殊处理
+- **JSON数据** (json, jsonl, ndjson) - 支持JSONPath、JSON扁平化
+- **Office文档** (doc, docx, ppt, pptx, xls, xlsx) - 支持公式提取、注释提取
+- **网页文档** (html, htm, xml) - 结构化解析
+- **其他格式** (csv, rtf, odt, ods, odp) - 通用文档处理
+
+**丰富的配置参数**：
+```java
+// PDF配置示例
+ReaderConfig pdfConfig = ReaderConfig.pdfConfig()
+    .setExtractTables(true)        // 提取表格
+    .setExtractImages(false)       // 不提取图片
+    .setPdfPageLimit(1000)         // 页数限制
+    .setLanguage("zh")             // 中文处理
+    .setMaxContentLength(1024*1024); // 内容长度限制
+
+// 文本配置示例
+ReaderConfig textConfig = ReaderConfig.textConfig()
+    .setPreserveFormatting(false)  // 不保持格式
+    .setChunkSize(1000)            // 分块大小
+    .setEnableChunking(true)       // 启用分块
+    .setRemoveWhitespace(true);    // 清理空白字符
+
+// JSON配置示例
+ReaderConfig jsonConfig = ReaderConfig.jsonConfig()
+    .setJsonPath("$.content")      // JSONPath提取
+    .setFlattenJson(true)          // JSON扁平化
+    .setJsonDepthLimit(5);         // 深度限制
+```
+
+#### 嵌入向量功能
+集成文档读取与向量化存储的完整流程：
+
+**核心API接口**：
+- `/api/embedding/process` - 文档嵌入处理
+- `/api/embedding/batch` - 批量文档处理
+- `/api/embedding/status/{id}` - 处理状态查询
+- `/api/embedding/supported-types` - 支持的文件类型
+- `/api/embedding/supported-models` - 支持的嵌入模型
+
+**使用示例**：
+```bash
+# 处理单个文档
+curl -X POST http://localhost:8080/api/embedding/process \
+  -H "Content-Type: application/json" \
+  -d '{
+    "fileId": "file_123",
+    "knowledgeBaseId": "kb_001",
+    "embeddingModel": "text-embedding-ada-002",
+    "chunkSize": 500,
+    "chunkOverlap": 50,
+    "processingMode": "SYNC"
+  }'
+
+# 批量处理文档
+curl -X POST http://localhost:8080/api/embedding/batch \
+  -H "Content-Type: application/json" \
+  -d '{
+    "requests": [
+      {"fileId": "file_1", "knowledgeBaseId": "kb_001"},
+      {"fileId": "file_2", "knowledgeBaseId": "kb_001"}
+    ],
+    "embeddingModel": "text-embedding-ada-002",
+    "processingMode": "ASYNC"
+  }'
+```
 
 ### Case by Case 查询接口
 
@@ -310,7 +399,8 @@ curl -X POST http://localhost:8080/api/rag/query/conversational \
 rag/
 ├── src/main/java/cn/mojoup/ai/rag/
 │   ├── controller/
-│   │   └── RagQueryController.java          # REST API控制器
+│   │   ├── RagQueryController.java          # RAG查询REST API控制器
+│   │   └── DocumentEmbeddingController.java # 文档嵌入REST API控制器 🆕
 │   ├── service/
 │   │   ├── RagQueryService.java             # 核心查询服务接口
 │   │   ├── VectorSearchService.java         # 向量搜索服务
@@ -322,17 +412,34 @@ rag/
 │   │   ├── SummaryGenerationService.java    # 摘要生成服务
 │   │   ├── DocumentRerankService.java       # 文档重排服务
 │   │   ├── RagAssistantService.java         # RAG助手服务
+│   │   ├── DocumentReaderService.java       # 文档读取服务接口 🆕
+│   │   ├── DocumentEmbeddingService.java    # 文档嵌入服务接口 🆕
+│   │   ├── EmbeddingService.java            # 向量化服务接口 🆕
+│   │   ├── VectorStoreService.java          # 向量存储服务接口 🆕
 │   │   └── impl/                            # 所有服务的实现类
+│   ├── reader/                              # 文档读取器包 🆕
+│   │   ├── DocumentReader.java              # 文档读取器统一接口
+│   │   ├── ReaderConfig.java                # 读取配置类
+│   │   ├── DocumentReaderFactory.java       # 读取器工厂
+│   │   └── impl/
+│   │       ├── PdfDocumentReader.java       # PDF文档读取器
+│   │       ├── TextDocumentReader.java      # 文本文档读取器
+│   │       ├── JsonDocumentReader.java      # JSON文档读取器
+│   │       └── TikaDocumentReader.java      # Office文档读取器
 │   ├── domain/
 │   │   ├── BaseQueryRequest.java            # 基础请求类
 │   │   ├── BaseQueryResponse.java           # 基础响应类
 │   │   ├── DocumentSegment.java             # 文档片段模型
 │   │   ├── Citation.java                    # 引用信息模型
+│   │   ├── DocumentEmbeddingRequest.java    # 文档嵌入请求类 🆕
+│   │   ├── DocumentEmbeddingResponse.java   # 文档嵌入响应类 🆕
 │   │   └── ...                              # 各种专门的请求/响应对象
 │   ├── config/
 │   │   └── SpringAiConfig.java              # Spring AI配置
 │   └── exception/
 │       └── RagException.java                # 异常定义
+├── EMBEDDING_GUIDE.md                       # 嵌入功能详细指南 🆕
+├── READER_ARCHITECTURE.md                   # 读取器架构说明 🆕
 └── pom.xml                                  # Maven配置
 ```
 
@@ -371,17 +478,94 @@ rag/
    - 处理可能的异常情况
    - 实现重试机制
 
+## 🎉 最新功能更新
+
+### v2.0.0 - 文档读取与嵌入功能重构
+
+#### ✅ 已完成功能
+
+**1. 文档读取器架构重构**
+- 📁 采用策略模式将文档读取逻辑模块化
+- 🔌 创建统一的DocumentReader接口
+- ⚙️ 实现功能丰富的ReaderConfig配置系统
+- 🏭 建立DocumentReaderFactory工厂管理模式
+
+**2. 多格式文档读取器**
+- 📄 `PdfDocumentReader` - 支持表格/图片/注释提取
+- 📝 `TextDocumentReader` - 支持Markdown格式和格式保持
+- 📊 `JsonDocumentReader` - 支持JSONPath和数据扁平化
+- 🗂️ `TikaDocumentReader` - 支持13+种Office文档格式
+
+**3. 嵌入向量功能**
+- 🔗 完整的文档→向量化→存储流程
+- 🎛️ 11个REST API接口（同步/异步/批量处理）
+- 📈 状态跟踪和进度监控
+- 🗄️ PGVector数据库集成
+- 🧠 支持5+主流嵌入模型
+
+**4. 丰富的配置参数**
+- 🎯 20+配置参数精细控制读取行为
+- 🔧 支持链式配置和预设配置模板
+- 📏 分块处理、内容清理、格式化控制
+- 🌍 多语言和多编码支持
+
+#### 🎯 架构优势
+
+1. **📈 高度可扩展** - 新增文件类型只需实现接口
+2. **⚙️ 精细可配** - 20+参数控制读取和处理行为
+3. **🔧 易于维护** - 每种文件类型独立维护
+4. **🛡️ 类型安全** - 编译时检查文件类型支持
+5. **⚡ 性能优化** - 针对性的读取策略和批量处理
+
+#### 📊 支持能力
+
+| 类别 | 支持格式 | 数量 | 特殊功能 |
+|------|---------|------|---------|
+| 文档 | PDF, DOC, DOCX, PPT, PPTX | 5种 | 表格/公式/注释提取 |
+| 文本 | TXT, MD, HTML, XML | 4种 | 格式保持/Markdown解析 |
+| 数据 | JSON, CSV, XLS, XLSX | 4种 | JSONPath/数据扁平化 |
+| 其他 | RTF, ODT, ODS, ODP | 4种 | 通用文档处理 |
+| **总计** | **17种文件格式** | **17种** | **全面覆盖主流格式** |
+
+#### 🚀 使用便利性
+
+```java
+// 一行代码读取任意格式文档
+List<Document> docs = documentReaderService.readDocumentsWithOptimizedConfig(fileInfo);
+
+// 灵活配置读取参数
+ReaderConfig config = ReaderConfig.pdfConfig()
+    .setExtractTables(true)
+    .setChunkSize(1000)
+    .setLanguage("zh");
+
+// 自动选择最佳读取器
+DocumentReader reader = readerFactory.getReader("pdf").get();
+```
+
 ## 开发计划
 
+### 已完成 ✅
+- [x] **文档读取器架构重构** - 策略模式，支持17种文件格式
+- [x] **嵌入向量功能** - 完整的文档向量化流程
+- [x] **PGVector集成** - 向量数据库支持
+- [x] **丰富的配置系统** - 20+参数精细控制
+- [x] **批量处理支持** - 异步和同步处理模式
+
+### 进行中 🚧
 - [ ] 集成更多AI模型（本地模型、其他云服务）
 - [ ] 支持更多向量数据库
 - [ ] 实现查询缓存机制
 - [ ] 添加性能监控和指标
+
+### 计划中 📋
 - [ ] 支持流式响应
 - [ ] 实现查询结果的可解释性
 - [ ] 添加多语言支持
 - [ ] 实现查询意图分析
 - [ ] 支持知识图谱增强
+- [ ] 文档分块策略优化
+- [ ] 嵌入模型微调支持
 
 ```
 export GOOSE_DRIVER=postgres
