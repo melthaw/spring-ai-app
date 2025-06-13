@@ -4,12 +4,20 @@ import cn.mojoup.ai.rag.domain.DocumentSegment;
 import cn.mojoup.ai.rag.service.KeywordSearchService;
 import cn.mojoup.ai.rag.service.VectorSearchService;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.ai.chat.client.ChatClient;
+import org.springframework.ai.chat.client.advisor.SimpleLoggerAdvisor;
+import org.springframework.ai.chat.messages.Message;
+import org.springframework.ai.chat.messages.MessageType;
+import org.springframework.ai.chat.messages.UserMessage;
+import org.springframework.ai.chat.model.ChatResponse;
+import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
 import java.util.*;
 import java.util.stream.Collectors;
+
 
 /**
  * AI驱动的关键词检索服务实现类
@@ -36,9 +44,8 @@ public class KeywordSearchServiceImpl implements KeywordSearchService {
     @Value("${rag.ai.temperature:0.3}")
     private Double temperature;
 
-    // TODO: 注入实际的AI客户端
-    // @Autowired
-    // private ChatClient chatClient;
+    @Autowired
+    private ChatClient chatClient;
 
     @Override
     public List<DocumentSegment> search(String query, List<String> keywords,
@@ -138,18 +145,25 @@ public class KeywordSearchServiceImpl implements KeywordSearchService {
 
         log.debug("AI关键词提取提示词: {}", prompt);
 
-        // TODO: 替换为实际的AI调用
-        // ChatResponse response = chatClient.call(
-        //     ChatRequest.builder()
-        //         .model(aiModel)
-        //         .temperature(temperature)
-        //         .messages(List.of(new Message(MessageType.USER, prompt)))
-        //         .build()
-        // );
-        // String aiResponse = response.getResult().getOutput().getContent();
+        List<Message> messages = List.of(UserMessage.builder().text(prompt).build());
+        ChatResponse response = chatClient.prompt(new Prompt(messages))
+                                          .messages(messages)
+                                          .advisors(new SimpleLoggerAdvisor())
+                                          .call()
+                                          .chatResponse();
+        String aiResponse = response.getResult().getOutput().getText();
 
-        // 模拟AI响应
-        String aiResponse = simulateAIKeywordExtraction(query);
+//        ChatResponse response = chatClient.call(
+//                ChatRequest.builder()
+//                           .model(aiModel)
+//                           .temperature(temperature)
+//                           .messages(List.of(new Message(MessageType.USER, prompt)))
+//                           .build()
+//        );
+//        String aiResponse = response.getResult().getOutput().getContent();
+//
+//        // 模拟AI响应
+//        String aiResponse = simulateAIKeywordExtraction(query);
 
         return parseKeywordsFromAIResponse(aiResponse);
     }

@@ -10,10 +10,12 @@ import cn.mojoup.ai.rag.reader.ocr.model.TableCell;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.JsonNode;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.ai.chat.ChatClient;
-import org.springframework.ai.chat.ChatResponse;
+import org.springframework.ai.chat.client.ChatClient;
+
+import org.springframework.ai.chat.client.advisor.SimpleLoggerAdvisor;
 import org.springframework.ai.chat.messages.Message;
 import org.springframework.ai.chat.messages.UserMessage;
+import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.ai.chat.prompt.PromptTemplate;
 import org.springframework.core.io.Resource;
@@ -54,8 +56,8 @@ public class LlmOcrReader implements OcrReader {
         // 准备提示词
         String systemPrompt = systemPromptTemplate.render(Map.of());
         String userPrompt = userPromptTemplate.render(Map.of(
-            "language", config.getLanguage(),
-            "enableTableRecognition", config.isEnableTableRecognition()
+                "language", config.getLanguage(),
+                "enableTableRecognition", config.isEnableTableRecognition()
         ));
 
         // 准备图片数据
@@ -68,8 +70,12 @@ public class LlmOcrReader implements OcrReader {
         messages.add(new UserMessage(userPrompt + "\n\n图片数据:\n" + imageData));
 
         // 调用LLM
-        ChatResponse response = chatClient.call(new Prompt(messages));
-        String result = response.getResult().getOutput().getContent();
+        ChatClient.ChatClientRequestSpec prompt = chatClient.prompt(new Prompt(messages));
+        ChatResponse response = prompt.messages(messages)
+                                      .advisors(new SimpleLoggerAdvisor())
+                                      .call()
+                                      .chatResponse();
+        String result = response.getResult().getOutput().getText();
 
         // 解析结果
         return parseResult(result);
@@ -78,7 +84,7 @@ public class LlmOcrReader implements OcrReader {
     private OcrResult parseResult(String result) throws IOException {
         JsonNode root = objectMapper.readTree(result);
         OcrResult ocrResult = new OcrResult();
-        
+
         // 解析基本信息
         ocrResult.setText(root.path("text").asText());
         ocrResult.setLanguage(root.path("language").asText());
@@ -90,7 +96,7 @@ public class LlmOcrReader implements OcrReader {
             TextBlock textBlock = new TextBlock();
             textBlock.setText(block.path("text").asText());
             textBlock.setConfidence(block.path("confidence").asDouble());
-            
+
             JsonNode bbox = block.path("boundingBox");
             if (!bbox.isMissingNode()) {
                 textBlock.setX(bbox.path("x").asDouble());
@@ -98,7 +104,7 @@ public class LlmOcrReader implements OcrReader {
                 textBlock.setWidth(bbox.path("width").asDouble());
                 textBlock.setHeight(bbox.path("height").asDouble());
             }
-            
+
             textBlock.setOrientation(block.path("orientation").asText());
             textBlocks.add(textBlock);
         });
@@ -110,7 +116,7 @@ public class LlmOcrReader implements OcrReader {
             Table table = new Table();
             table.setType(tableNode.path("type").asText());
             table.setConfidence(tableNode.path("confidence").asDouble());
-            
+
             JsonNode bbox = tableNode.path("boundingBox");
             if (!bbox.isMissingNode()) {
                 table.setX(bbox.path("x").asDouble());
@@ -118,12 +124,12 @@ public class LlmOcrReader implements OcrReader {
                 table.setWidth(bbox.path("width").asDouble());
                 table.setHeight(bbox.path("height").asDouble());
             }
-            
+
             List<TableRow> rows = new ArrayList<>();
             tableNode.path("rows").forEach(rowNode -> {
                 TableRow row = new TableRow();
                 List<TableCell> cells = new ArrayList<>();
-                
+
                 rowNode.path("cells").forEach(cellNode -> {
                     TableCell cell = new TableCell();
                     cell.setText(cellNode.path("text").asText());
@@ -131,7 +137,7 @@ public class LlmOcrReader implements OcrReader {
                     cell.setRowSpan(cellNode.path("rowSpan").asInt());
                     cell.setColSpan(cellNode.path("colSpan").asInt());
                     cell.setHeader(cellNode.path("header").asBoolean());
-                    
+
                     JsonNode cellBbox = cellNode.path("boundingBox");
                     if (!cellBbox.isMissingNode()) {
                         cell.setX(cellBbox.path("x").asDouble());
@@ -139,14 +145,14 @@ public class LlmOcrReader implements OcrReader {
                         cell.setWidth(cellBbox.path("width").asDouble());
                         cell.setHeight(cellBbox.path("height").asDouble());
                     }
-                    
+
                     cells.add(cell);
                 });
-                
+
                 row.setCells(cells);
                 rows.add(row);
             });
-            
+
             table.setRows(rows);
             tables.add(table);
         });
@@ -164,20 +170,20 @@ public class LlmOcrReader implements OcrReader {
     @Override
     public boolean supports(String mimeType) {
         return StringUtils.hasText(mimeType) && (
-            mimeType.startsWith("image/") ||
-            mimeType.equals("application/pdf")
+                mimeType.startsWith("image/") ||
+                mimeType.equals("application/pdf")
         );
     }
 
     @Override
     public List<String> getSupportedMimeTypes() {
         return List.of(
-            "image/jpeg",
-            "image/png",
-            "image/gif",
-            "image/bmp",
-            "image/webp",
-            "application/pdf"
+                "image/jpeg",
+                "image/png",
+                "image/gif",
+                "image/bmp",
+                "image/webp",
+                "application/pdf"
         );
     }
 
