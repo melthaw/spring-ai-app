@@ -18,7 +18,7 @@ import java.util.Map;
  */
 @Slf4j
 @RestControllerAdvice
-public class GlobalExceptionHandler {
+public class UploadExceptionHandler {
     
     /**
      * 处理文件上传大小超限异常

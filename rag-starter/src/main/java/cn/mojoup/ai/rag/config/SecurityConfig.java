@@ -1,4 +1,4 @@
-package cn.mojoup.ai.upload.config;
+package cn.mojoup.ai.rag.config;
 
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.annotation.Bean;

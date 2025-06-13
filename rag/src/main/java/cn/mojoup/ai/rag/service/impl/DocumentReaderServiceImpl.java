@@ -45,12 +45,12 @@ public class DocumentReaderServiceImpl implements DocumentReaderService {
      */
     public List<Document> readDocuments(FileInfo fileInfo, ReaderConfig config) {
         try {
-            log.info("Reading documents from file: {} ({}) with config", 
-                fileInfo.getOriginalFileName(), fileInfo.getFileExtension());
+            log.info("Reading documents from file: {} ({}) with config",
+                     fileInfo.getOriginalFileName(), fileInfo.getFileExtension());
 
             // 获取文件资源
             Resource resource = fileUploadService.getFileResourceById(fileInfo.getFileId());
-            
+
             return readDocuments(resource, fileInfo, config);
 
         } catch (Exception e) {
@@ -69,7 +69,7 @@ public class DocumentReaderServiceImpl implements DocumentReaderService {
      */
     public List<Document> readDocuments(Resource resource, FileInfo fileInfo, ReaderConfig config) {
         String extension = fileInfo.getFileExtension().toLowerCase();
-        
+
         if (!isSupported(extension)) {
             throw new IllegalArgumentException("Unsupported file type: " + extension);
         }
@@ -86,14 +86,14 @@ public class DocumentReaderServiceImpl implements DocumentReaderService {
 
             // 读取文档
             List<Document> documents = reader.read(resource, config);
-            
+
             // 添加文件信息元数据
             documents = documents.stream()
-                    .map(doc -> enrichDocumentMetadata(doc, fileInfo, config))
-                    .collect(Collectors.toList());
+                                 .map(doc -> enrichDocumentMetadata(doc, fileInfo, config))
+                                 .collect(Collectors.toList());
 
-            log.info("Successfully read {} documents from file: {} using reader: {}", 
-                documents.size(), fileInfo.getOriginalFileName(), reader.getReaderType());
+            log.info("Successfully read {} documents from file: {} using reader: {}",
+                     documents.size(), fileInfo.getOriginalFileName(), reader.getReaderType());
             return documents;
 
         } catch (Exception e) {
@@ -104,7 +104,7 @@ public class DocumentReaderServiceImpl implements DocumentReaderService {
 
     @Override
     public boolean isSupported(String fileExtension) {
-        return StringUtils.hasText(fileExtension) && 
+        return StringUtils.hasText(fileExtension) &&
                readerFactory.isSupported(fileExtension);
     }
 
@@ -122,10 +122,10 @@ public class DocumentReaderServiceImpl implements DocumentReaderService {
         // 去除多余的空格和换行
         String cleaned = MULTIPLE_SPACES.matcher(content).replaceAll(" ");
         cleaned = MULTIPLE_NEWLINES.matcher(cleaned).replaceAll("\n\n");
-        
+
         // 去除首尾空白
         cleaned = cleaned.trim();
-        
+
         return cleaned;
     }
 
@@ -145,26 +145,29 @@ public class DocumentReaderServiceImpl implements DocumentReaderService {
      */
     public ReaderConfig createOptimizedConfig(String fileExtension) {
         String ext = fileExtension.toLowerCase();
-        
+
         switch (ext) {
             case "pdf":
                 return ReaderConfig.pdfConfig()
-                        .setExtractTables(true)
-                        .setExtractImages(false)
-                        .setPdfPageLimit(1000);
-            
+                                   .extractTables(true)
+                                   .extractImages(false)
+                                   .pdfPageLimit(1000)
+                                   .build();
+
             case "txt":
             case "md":
                 return ReaderConfig.textConfig()
-                        .setPreserveFormatting(ext.equals("md"))
-                        .setChunkSize(1000)
-                        .setEnableChunking(true);
-            
+                                   .preserveFormatting(ext.equals("md"))
+                                   .chunkSize(1000)
+                                   .enableChunking(true)
+                                   .build();
+
             case "json":
                 return ReaderConfig.jsonConfig()
-                        .setFlattenJson(true)
-                        .setJsonDepthLimit(5);
-            
+                                   .flattenJson(true)
+                                   .jsonDepthLimit(5)
+                                   .build();
+
             case "doc":
             case "docx":
             case "ppt":
@@ -172,10 +175,11 @@ public class DocumentReaderServiceImpl implements DocumentReaderService {
             case "xls":
             case "xlsx":
                 return ReaderConfig.officeConfig()
-                        .setExtractFormulas(true)
-                        .setExtractComments(false)
-                        .setParseEmbeddedDocuments(false);
-            
+                                   .extractFormulas(true)
+                                   .extractComments(false)
+                                   .parseEmbeddedDocuments(false)
+                                   .build();
+
             default:
                 return ReaderConfig.defaultConfig();
         }
@@ -194,7 +198,7 @@ public class DocumentReaderServiceImpl implements DocumentReaderService {
      */
     private Document enrichDocumentMetadata(Document document, FileInfo fileInfo, ReaderConfig config) {
         Map<String, Object> metadata = new HashMap<>(document.getMetadata());
-        
+
         // 添加文件基本信息
         metadata.put("file_id", fileInfo.getFileId());
         metadata.put("original_filename", fileInfo.getOriginalFileName());
@@ -204,16 +208,16 @@ public class DocumentReaderServiceImpl implements DocumentReaderService {
         metadata.put("upload_time", fileInfo.getUploadTime());
         metadata.put("upload_user_id", fileInfo.getUploadUserId());
         metadata.put("storage_type", fileInfo.getStorageType().getCode());
-        
+
         // 添加自定义标签和元数据
         if (StringUtils.hasText(fileInfo.getTags())) {
             metadata.put("tags", fileInfo.getTags());
         }
-        
+
         if (fileInfo.getMetadata() != null && !fileInfo.getMetadata().isEmpty()) {
             metadata.put("custom_metadata", fileInfo.getMetadata());
         }
-        
+
         // 添加文档长度信息
         String content = document.getText();
         if (StringUtils.hasText(content)) {
@@ -223,17 +227,17 @@ public class DocumentReaderServiceImpl implements DocumentReaderService {
 
         // 添加读取配置信息
         metadata.put("reader_config", Map.of(
-            "chunk_size", config.getChunkSize(),
-            "chunk_overlap", config.getChunkOverlap(),
-            "enable_chunking", config.isEnableChunking(),
-            "language", config.getLanguage(),
-            "charset", config.getCharset().name()
+                "chunk_size", config.getChunkSize(),
+                "chunk_overlap", config.getChunkOverlap(),
+                "enable_chunking", config.isEnableChunking(),
+                "language", config.getLanguage(),
+                "charset", config.getCharset().name()
         ));
 
         return Document.builder()
-                .id(document.getId())
-                .text(content)
-                .metadata(metadata)
-                .build();
+                       .id(document.getId())
+                       .text(content)
+                       .metadata(metadata)
+                       .build();
     }
 } 
