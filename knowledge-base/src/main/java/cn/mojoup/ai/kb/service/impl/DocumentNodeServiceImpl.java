@@ -2,6 +2,7 @@ package cn.mojoup.ai.kb.service.impl;
 
 import cn.mojoup.ai.kb.dto.*;
 import cn.mojoup.ai.kb.entity.DocumentNode;
+import cn.mojoup.ai.kb.mapper.DocumentNodeMapper;
 import cn.mojoup.ai.kb.repository.DocumentNodeRepository;
 import cn.mojoup.ai.kb.service.AuditService;
 import cn.mojoup.ai.kb.service.DocumentNodeService;
@@ -41,6 +42,7 @@ public class DocumentNodeServiceImpl implements DocumentNodeService {
     private final AuditService auditService;
     private final FileInfoStorageService fileInfoStorageService;
     private final KnowledgeBaseRepository knowledgeBaseRepository;
+    private final DocumentNodeMapper documentNodeMapper;
 
     @Override
     @Transactional
@@ -65,23 +67,13 @@ public class DocumentNodeServiceImpl implements DocumentNodeService {
         }
         
         // 创建文档节点
-        DocumentNode documentNode = DocumentNode.builder()
-                .knowledgeBaseId(kbId)
-                .parentId(request.getParentId())
-                .name(request.getName())
-                .description(request.getDescription())
-                .nodeType(request.getNodeType())
-                .filePath(request.getFilePath())
-                .fileName(request.getFileName())
-                .fileSize(request.getFileSize())
-                .mimeType(request.getMimeType())
-                .tags(request.getTags())
-                .metadata(request.getMetadata())
-                .sortOrder(request.getSortOrder() != null ? request.getSortOrder() : 0)
-                .embeddingStatus(DocumentNode.EmbeddingStatus.NOT_EMBEDDED)
-                .createdBy(currentUserId)
-                .status(DocumentNode.Status.ACTIVE)
-                .build();
+        DocumentNode documentNode = documentNodeMapper.fromCreateRequest(request);
+        documentNode.setKnowledgeBaseId(kbId);
+        documentNode.setParentId(request.getParentId());
+        documentNode.setSortOrder(request.getSortOrder() != null ? request.getSortOrder() : 0);
+        documentNode.setEmbeddingStatus(DocumentNode.EmbeddingStatus.NOT_EMBEDDED);
+        documentNode.setCreatedBy(currentUserId);
+        documentNode.setStatus(DocumentNode.Status.ACTIVE);
         
         // 设置层级路径
         if (parentNode != null) {
@@ -126,22 +118,11 @@ public class DocumentNodeServiceImpl implements DocumentNodeService {
                     request.getName(), nodeId)) {
                 throw new IllegalArgumentException("Node name already exists");
             }
-            documentNode.setName(request.getName());
             updateNodePath(documentNode);
         }
         
-        if (request.getDescription() != null) {
-            documentNode.setDescription(request.getDescription());
-        }
-        if (request.getTags() != null) {
-            documentNode.setTags(request.getTags());
-        }
-        if (request.getMetadata() != null) {
-            documentNode.setMetadata(request.getMetadata());
-        }
-        if (request.getSortOrder() != null) {
-            documentNode.setSortOrder(request.getSortOrder());
-        }
+        // 使用MapStruct进行部分更新
+        documentNodeMapper.updateFromRequest(request, documentNode);
         
         documentNode.setUpdatedBy(currentUserId);
         documentNode.setUpdatedAt(LocalDateTime.now());
@@ -581,43 +562,15 @@ public class DocumentNodeServiceImpl implements DocumentNodeService {
     private DocumentNodeTreeDTO buildTreeNode(DocumentNode node) {
         List<DocumentNode> children = documentNodeRepository.findByParentIdAndDeletedFalseOrderBySortOrderAscNameAsc(node.getId());
         
-        return DocumentNodeTreeDTO.builder()
-                .id(node.getId())
-                .name(node.getName())
-                .nodeType(node.getNodeType())
-                .path(node.getPath())
-                .level(node.getLevel())
-                .hasChildren(!children.isEmpty())
-                .children(children.stream().map(this::buildTreeNode).collect(Collectors.toList()))
-                .build();
+        DocumentNodeTreeDTO treeNode = documentNodeMapper.toTreeDTO(node);
+        treeNode.setHasChildren(!children.isEmpty());
+        treeNode.setChildren(children.stream().map(this::buildTreeNode).collect(Collectors.toList()));
+        
+        return treeNode;
     }
     
     private DocumentNodeDetailDTO convertToDetailDTO(DocumentNode node) {
-        return DocumentNodeDetailDTO.builder()
-                .id(node.getId())
-                .knowledgeBaseId(node.getKnowledgeBaseId())
-                .parentId(node.getParentId())
-                .name(node.getName())
-                .description(node.getDescription())
-                .nodeType(node.getNodeType())
-                .filePath(node.getFilePath())
-                .fileName(node.getFileName())
-                .fileSize(node.getFileSize())
-                .mimeType(node.getMimeType())
-                .tags(node.getTags())
-                .metadata(node.getMetadata())
-                .path(node.getPath())
-                .level(node.getLevel())
-                .sortOrder(node.getSortOrder())
-                .embeddingStatus(node.getEmbeddingStatus())
-                .lastEmbeddedAt(node.getLastEmbeddedAt())
-                .vectorCount(node.getVectorCount())
-                .status(node.getStatus())
-                .createdAt(node.getCreatedAt())
-                .createdBy(node.getCreatedBy())
-                .updatedAt(node.getUpdatedAt())
-                .updatedBy(node.getUpdatedBy())
-                .build();
+        return documentNodeMapper.toDetailDTO(node);
     }
     
     private DocumentNodeListDTO convertToListDTO(DocumentNode node) {

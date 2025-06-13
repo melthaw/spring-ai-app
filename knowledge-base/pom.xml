@@ -51,6 +51,18 @@
             <artifactId>druid-spring-boot-3-starter</artifactId>
         </dependency>
 
+        <!-- MapStruct -->
+        <dependency>
+            <groupId>org.mapstruct</groupId>
+            <artifactId>mapstruct</artifactId>
+        </dependency>
+
+        <dependency>
+            <groupId>org.mapstruct</groupId>
+            <artifactId>mapstruct-processor</artifactId>
+            <scope>provided</scope>
+        </dependency>
+
         <!-- Other modules -->
         <dependency>
             <groupId>cn.mojoup.ai</groupId>

@@ -2,6 +2,7 @@ package cn.mojoup.ai.rag.service.impl;
 
 import cn.mojoup.ai.rag.domain.*;
 import cn.mojoup.ai.rag.exception.RagException;
+import cn.mojoup.ai.rag.mapper.QueryMapper;
 import cn.mojoup.ai.rag.service.*;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -43,6 +44,9 @@ public class RagQueryServiceImpl implements RagQueryService {
 
     @Autowired
     private RagAssistantService ragAssistantService;
+    
+    @Autowired
+    private QueryMapper queryMapper;
 
     @Override
     public SimpleQueryResponse simpleQuery(SimpleQueryRequest request) {
@@ -68,9 +72,7 @@ public class RagQueryServiceImpl implements RagQueryService {
 
             // 组装响应
             SimpleQueryResponse response = new SimpleQueryResponse();
-            response.setQueryId(UUID.randomUUID().toString());
-            response.setQuestion(request.getQuestion());
-            response.setQueryTime(LocalDateTime.now());
+            queryMapper.initializeBaseResponse(response, request);
             response.setQueryType("simple");
             response.setKnowledgeBaseId(request.getKnowledgeBaseId());
             response.setAnswer(answer);
@@ -78,7 +80,6 @@ public class RagQueryServiceImpl implements RagQueryService {
             response.setModel("qwen-max");
             response.setTokensUsed(ragAssistantService.estimateTokens(request.getQuestion(), answer));
             response.setProcessingTime(System.currentTimeMillis() - startTime);
-            response.setSuccess(true);
 
             return response;
 
@@ -116,9 +117,7 @@ public class RagQueryServiceImpl implements RagQueryService {
 
             // 组装响应
             MultiKnowledgeBaseQueryResponse response = new MultiKnowledgeBaseQueryResponse();
-            response.setQueryId(UUID.randomUUID().toString());
-            response.setQuestion(request.getQuestion());
-            response.setQueryTime(LocalDateTime.now());
+            queryMapper.initializeBaseResponse(response, request);
             response.setQueryType("multi_knowledge_base");
             response.setKnowledgeBaseIds(request.getKnowledgeBaseIds());
             response.setAnswer(answer);
@@ -127,7 +126,6 @@ public class RagQueryServiceImpl implements RagQueryService {
             response.setModel("qwen-max");
             response.setTokensUsed(ragAssistantService.estimateTokens(request.getQuestion(), answer));
             response.setProcessingTime(System.currentTimeMillis() - startTime);
-            response.setSuccess(true);
 
             return response;
 
