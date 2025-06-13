@@ -41,6 +41,43 @@ rag:
       # 匹配增强提示词模板文件
       matching-enhancement: classpath:prompts/matching_enhancement.txt
   
+  # OCR配置
+  ocr:
+    # 默认OCR引擎
+    default-engine: paddle
+    # PaddleOCR配置
+    paddle:
+      # 模型目录
+      model-dir: classpath:models/paddle
+      # 检测模型
+      det-model: ch_PP-OCRv4_det_infer
+      # 分类模型
+      cls-model: ch_ppocr_mobile_v2.0_cls_infer
+      # 识别模型
+      rec-model: ch_PP-OCRv4_rec_infer
+      # 词表文件
+      keys: ppocr_keys_v1.txt
+    # TrOCR配置
+    trocr:
+      # 模型路径
+      model-path: classpath:models/trocr/model.pt
+      # 词表路径
+      vocab-path: classpath:models/trocr/vocab.json
+    # LLM OCR配置
+    llm:
+      # 使用的模型
+      model: gpt-4-vision-preview
+      # 温度参数
+      temperature: 0.1
+      # 最大token数
+      max-tokens: 4096
+      # 提示词模板
+      prompts:
+        # 系统提示词
+        system: classpath:prompts/ocr_system.txt
+        # 用户提示词
+        user: classpath:prompts/ocr_user.txt
+  
   search:
     # 关键词搜索配置
     keyword:
@@ -291,4 +328,12 @@ logging:
     cn.mojoup.ai.rag.service.generation: DEBUG
     cn.mojoup.ai.rag.service.rerank: DEBUG
     cn.mojoup.ai.rag.service.search: INFO
-    org.springframework.ai: INFO 
+    org.springframework.ai: INFO
+
+reader:
+  ocr:
+    # PaddleOCR配置
+    paddle:
+      service-url: http://localhost:8000/ocr
+      model-path: classpath:models/paddleocr/model
+      vocab-path: classpath:models/paddleocr/vocab.txt 

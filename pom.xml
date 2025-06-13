@@ -10,9 +10,9 @@
     <packaging>pom</packaging>
 
     <modules>
-        <module>rag</module>
-        <module>openapi</module>
         <module>upload</module>
+        <module>rag</module>
+        <module>rag-starter</module>
     </modules>
 
     <properties>
@@ -75,6 +75,11 @@
                 <version>${lombok.version}</version>
             </dependency>
 
+            <dependency>
+                <groupId>cn.mojoup.ai</groupId>
+                <artifactId>upload</artifactId>
+                <version>1.0.0-SNAPSHOT</version>
+            </dependency>
 
             <dependency>
                 <groupId>cn.mojoup.ai</groupId>
@@ -84,13 +89,7 @@
 
             <dependency>
                 <groupId>cn.mojoup.ai</groupId>
-                <artifactId>openapi</artifactId>
-                <version>1.0.0-SNAPSHOT</version>
-            </dependency>
-
-            <dependency>
-                <groupId>cn.mojoup.ai</groupId>
-                <artifactId>upload</artifactId>
+                <artifactId>rag-starter</artifactId>
                 <version>1.0.0-SNAPSHOT</version>
             </dependency>
 

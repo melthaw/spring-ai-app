@@ -1,0 +1,38 @@
+version: '3'
+
+services:
+  paddleocr:
+    build:
+      context: ./paddleocr
+      dockerfile: Dockerfile
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./paddleocr:/app
+    command: >
+      python -m uvicorn paddle_ocr_service:app --host 0.0.0.0 --port 8000
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: 1
+              capabilities: [gpu]
+
+  trocr:
+    image: pytorch/pytorch:2.1.0-cuda11.8-cudnn8-runtime
+    ports:
+      - "8001:8001"
+    volumes:
+      - ./trocr:/app
+    working_dir: /app
+    command: >
+      bash -c "pip install transformers fastapi uvicorn python-multipart &&
+              python -m uvicorn trocr_service:app --host 0.0.0.0 --port 8001"
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: 1
+              capabilities: [gpu] 

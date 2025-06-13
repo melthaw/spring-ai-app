@@ -1,14 +1,14 @@
-package cn.mojoup.ai.app;
+package cn.mojoup.ai.rag;
 
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 
 @SpringBootApplication()
-public class SpringAiOpenApiApplication {
+public class SpringAiRagApplication {
 
     public static void main(String[] args) {
         // System.setProperty("spring.devtools.restart.enabled", "false");
-        SpringApplication.run(SpringAiOpenApiApplication.class, args);
+        SpringApplication.run(SpringAiRagApplication.class, args);
     }
 
 }

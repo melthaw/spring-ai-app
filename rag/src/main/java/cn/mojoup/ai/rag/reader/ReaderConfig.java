@@ -19,6 +19,19 @@ public class ReaderConfig {
     private int maxContentLength = 1024 * 1024; // 1MB
     private String language = "zh";
 
+    // 文档结构配置
+    private boolean readByParagraph = false;  // 是否按段落读取
+    private boolean readByPage = false;       // 是否按页读取
+    private boolean mergeCrossPageParagraphs = false;  // 是否合并跨页段落
+    private boolean mergeCrossPageTables = false;      // 是否合并跨页表格
+    private boolean detectAndMergeTables = false;      // 是否检测并合并表格
+    private boolean performOcrOnImages = false;        // 是否对图片进行OCR识别
+    private boolean extractImageMetadata = false;      // 是否提取图片元数据
+    private boolean preserveTableStructure = false;    // 是否保持表格结构
+    private boolean extractTableHeaders = false;       // 是否提取表格标题
+    private boolean extractTableFooters = false;       // 是否提取表格页脚
+    private boolean extractTableCaptions = false;      // 是否提取表格说明文字
+
     // PDF特定配置
     private boolean extractImages = false;
     private boolean extractTables = true;
@@ -174,4 +187,37 @@ public class ReaderConfig {
     public Object getCustomProperty(String key, Object defaultValue) {
         return this.customProperties.getOrDefault(key, defaultValue);
     }
+
+    public boolean isReadByParagraph() { return readByParagraph; }
+    public ReaderConfig setReadByParagraph(boolean readByParagraph) { this.readByParagraph = readByParagraph; return this; }
+
+    public boolean isReadByPage() { return readByPage; }
+    public ReaderConfig setReadByPage(boolean readByPage) { this.readByPage = readByPage; return this; }
+
+    public boolean isMergeCrossPageParagraphs() { return mergeCrossPageParagraphs; }
+    public ReaderConfig setMergeCrossPageParagraphs(boolean mergeCrossPageParagraphs) { this.mergeCrossPageParagraphs = mergeCrossPageParagraphs; return this; }
+
+    public boolean isMergeCrossPageTables() { return mergeCrossPageTables; }
+    public ReaderConfig setMergeCrossPageTables(boolean mergeCrossPageTables) { this.mergeCrossPageTables = mergeCrossPageTables; return this; }
+
+    public boolean isDetectAndMergeTables() { return detectAndMergeTables; }
+    public ReaderConfig setDetectAndMergeTables(boolean detectAndMergeTables) { this.detectAndMergeTables = detectAndMergeTables; return this; }
+
+    public boolean isPerformOcrOnImages() { return performOcrOnImages; }
+    public ReaderConfig setPerformOcrOnImages(boolean performOcrOnImages) { this.performOcrOnImages = performOcrOnImages; return this; }
+
+    public boolean isExtractImageMetadata() { return extractImageMetadata; }
+    public ReaderConfig setExtractImageMetadata(boolean extractImageMetadata) { this.extractImageMetadata = extractImageMetadata; return this; }
+
+    public boolean isPreserveTableStructure() { return preserveTableStructure; }
+    public ReaderConfig setPreserveTableStructure(boolean preserveTableStructure) { this.preserveTableStructure = preserveTableStructure; return this; }
+
+    public boolean isExtractTableHeaders() { return extractTableHeaders; }
+    public ReaderConfig setExtractTableHeaders(boolean extractTableHeaders) { this.extractTableHeaders = extractTableHeaders; return this; }
+
+    public boolean isExtractTableFooters() { return extractTableFooters; }
+    public ReaderConfig setExtractTableFooters(boolean extractTableFooters) { this.extractTableFooters = extractTableFooters; return this; }
+
+    public boolean isExtractTableCaptions() { return extractTableCaptions; }
+    public ReaderConfig setExtractTableCaptions(boolean extractTableCaptions) { this.extractTableCaptions = extractTableCaptions; return this; }
 } 

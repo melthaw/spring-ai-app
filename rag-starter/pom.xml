@@ -9,7 +9,7 @@
         <version>1.0.0-SNAPSHOT</version>
     </parent>
 
-    <artifactId>openapi</artifactId>
+    <artifactId>rag-starter</artifactId>
 
     <dependencies>
         <dependency>
