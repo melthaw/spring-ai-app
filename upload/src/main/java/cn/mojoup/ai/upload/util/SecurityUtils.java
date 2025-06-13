@@ -3,10 +3,10 @@ package cn.mojoup.ai.upload.util;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
-import org.springframework.util.StringUtils;
+import org.springframework.security.core.userdetails.UserDetails;
 
 /**
- * Security工具类
+ * 安全工具类
  * 
  * @author matt
  */
@@ -14,100 +14,46 @@ import org.springframework.util.StringUtils;
 public class SecurityUtils {
     
     /**
-     * 获取当前登录用户的ID
-     * 
-     * @return 用户ID，如果未登录则返回"anonymous"
+     * 获取当前用户ID
      */
     public static String getCurrentUserId() {
-        try {
-            Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-            
-            if (authentication != null && authentication.isAuthenticated()) {
-                // 如果是匿名用户，返回"anonymous"
-                if ("anonymousUser".equals(authentication.getName())) {
-                    return "anonymous";
-                }
-                
-                // 返回用户名作为用户ID
-                String userId = authentication.getName();
-                
-                if (StringUtils.hasText(userId)) {
-                    log.debug("Current user ID: {}", userId);
-                    return userId;
-                }
-            }
-            
-            log.debug("No authenticated user found, returning anonymous");
-            return "anonymous";
-            
-        } catch (Exception e) {
-            log.warn("Failed to get current user ID, returning anonymous", e);
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        
+        if (authentication == null || !authentication.isAuthenticated()) {
             return "anonymous";
         }
+        
+        Object principal = authentication.getPrincipal();
+        
+        if (principal instanceof UserDetails) {
+            return ((UserDetails) principal).getUsername();
+        } else if (principal instanceof String) {
+            return (String) principal;
+        }
+        
+        return "unknown";
     }
     
     /**
-     * 获取当前登录用户名
-     * 
-     * @return 用户名，如果未登录则返回"Anonymous User"
+     * 获取当前用户名
      */
     public static String getCurrentUsername() {
-        try {
-            Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-            
-            if (authentication != null && authentication.isAuthenticated()) {
-                String username = authentication.getName();
-                
-                if (StringUtils.hasText(username) && !"anonymousUser".equals(username)) {
-                    return username;
-                }
-            }
-            
-            return "Anonymous User";
-            
-        } catch (Exception e) {
-            log.warn("Failed to get current username", e);
-            return "Anonymous User";
-        }
+        return getCurrentUserId();
     }
     
     /**
-     * 检查用户是否已认证
-     * 
-     * @return true如果用户已认证
+     * 检查是否已认证
      */
     public static boolean isAuthenticated() {
-        try {
-            Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-            return authentication != null 
-                    && authentication.isAuthenticated() 
-                    && !"anonymousUser".equals(authentication.getName());
-        } catch (Exception e) {
-            log.warn("Failed to check authentication status", e);
-            return false;
-        }
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        return authentication != null && authentication.isAuthenticated() && 
+               !"anonymousUser".equals(authentication.getPrincipal());
     }
     
     /**
-     * 检查用户是否拥有指定的权限
-     * 
-     * @param authority 权限名称
-     * @return true如果用户拥有该权限
+     * 获取当前认证信息
      */
-    public static boolean hasAuthority(String authority) {
-        try {
-            Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-            
-            if (authentication != null && authentication.isAuthenticated()) {
-                return authentication.getAuthorities().stream()
-                        .anyMatch(grantedAuthority -> authority.equals(grantedAuthority.getAuthority()));
-            }
-            
-            return false;
-            
-        } catch (Exception e) {
-            log.warn("Failed to check authority: {}", authority, e);
-            return false;
-        }
+    public static Authentication getCurrentAuthentication() {
+        return SecurityContextHolder.getContext().getAuthentication();
     }
 } 
