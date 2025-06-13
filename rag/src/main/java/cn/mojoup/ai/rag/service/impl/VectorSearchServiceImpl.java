@@ -104,7 +104,7 @@ public class VectorSearchServiceImpl implements VectorSearchService {
 
             // 4. 如果启用重排序，则委托给DocumentRerankService
             if (rerank && filteredResults.size() > 1) {
-                filteredResults = documentRerankService.rerankDocuments(filteredResults, query);
+                filteredResults = documentRerankService.rerank(filteredResults, query);
             }
 
             return filteredResults.stream()
@@ -116,14 +116,6 @@ public class VectorSearchServiceImpl implements VectorSearchService {
             // 降级到基础向量搜索
             return search(query, knowledgeBaseId, limit, threshold);
         }
-    }
-
-    @Override
-    public List<DocumentSegment> rerankDocuments(List<DocumentSegment> documents, String query) {
-        log.info("重排序文档: docCount={}, query={}", documents.size(), query);
-
-        // 委托给专门的重排序服务
-        return documentRerankService.rerankDocuments(documents, query);
     }
 
     // ==================== 向量检索核心方法 ====================

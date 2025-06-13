@@ -28,4 +28,8 @@ public class SimpleQueryRequest extends BaseQueryRequest {
      * 最大token数
      */
     private Integer maxTokens = 2000;
+
+    private String question;
+    private Integer limit;
+    private Double similarityThreshold;
 } 

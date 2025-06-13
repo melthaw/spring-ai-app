@@ -81,4 +81,14 @@ public class DocumentSegment {
      * 高亮信息
      */
     private Map<String, String> highlights;
+
+    /**
+     * 片段起始索引
+     */
+    private Integer startIndex;
+
+    /**
+     * 片段结束索引
+     */
+    private Integer endIndex;
 } 

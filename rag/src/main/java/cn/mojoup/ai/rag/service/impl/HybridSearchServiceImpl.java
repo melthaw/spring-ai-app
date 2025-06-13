@@ -1,6 +1,7 @@
 package cn.mojoup.ai.rag.service.impl;
 
 import cn.mojoup.ai.rag.domain.DocumentSegment;
+import cn.mojoup.ai.rag.service.DocumentRerankService;
 import cn.mojoup.ai.rag.service.HybridSearchService;
 import cn.mojoup.ai.rag.service.KeywordSearchService;
 import cn.mojoup.ai.rag.service.VectorSearchService;
@@ -27,6 +28,9 @@ public class HybridSearchServiceImpl implements HybridSearchService {
     private VectorSearchService vectorSearchService;
 
     @Autowired
+    private DocumentRerankService documentRerankService;
+
+    @Autowired
     private KeywordSearchService keywordSearchService;
 
     @Override
@@ -50,7 +54,7 @@ public class HybridSearchServiceImpl implements HybridSearchService {
 
         // 4. 重排序
         if (enableRerank && hybridResults.size() > 1) {
-            hybridResults = vectorSearchService.rerankDocuments(hybridResults, query);
+            hybridResults = documentRerankService.rerank(hybridResults, query);
         }
 
         return hybridResults.stream()

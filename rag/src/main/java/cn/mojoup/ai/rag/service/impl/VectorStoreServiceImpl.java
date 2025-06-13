@@ -54,20 +54,22 @@ public class VectorStoreServiceImpl implements VectorStoreService {
         try {
             // 为每个文档添加知识库ID元数据
             List<Document> enrichedDocuments = documents.stream()
-                    .map(doc -> {
-                        Map<String, Object> metadata = new HashMap<>(doc.getMetadata());
-                        metadata.put("knowledge_base_id", knowledgeBaseId);
-                        metadata.put("created_at", System.currentTimeMillis());
-                        return Document.builder()
-                                .id(doc.getId())
-                                .text(doc.getText())
-                                .metadata(metadata)
-                                .build();
-                    })
-                    .collect(Collectors.toList());
+                                                        .map(doc -> {
+                                                            Map<String, Object> metadata = new HashMap<>(doc.getMetadata());
+                                                            metadata.put("knowledge_base_id", knowledgeBaseId);
+                                                            metadata.put("created_at", System.currentTimeMillis());
+                                                            return Document.builder()
+                                                                           .id(doc.getId())
+                                                                           .text(doc.getText())
+                                                                           .metadata(metadata)
+                                                                           .build();
+                                                        })
+                                                        .collect(Collectors.toList());
 
             vectorStore.add(enrichedDocuments);
-            logger.info("Successfully added {} documents to knowledge base: {}", enrichedDocuments.size(), knowledgeBaseId);
+            logger.info("Successfully added {} documents to knowledge base: {}",
+                        enrichedDocuments.size(),
+                        knowledgeBaseId);
 
         } catch (Exception e) {
             logger.error("Failed to add documents to knowledge base: {}", knowledgeBaseId, e);
@@ -89,10 +91,12 @@ public class VectorStoreServiceImpl implements VectorStoreService {
         try {
             // 验证文档是否属于指定知识库
             List<String> validDocumentIds = validateDocumentsInKnowledgeBase(documentIds, knowledgeBaseId);
-            
+
             if (!CollectionUtils.isEmpty(validDocumentIds)) {
                 vectorStore.delete(validDocumentIds);
-                logger.info("Successfully deleted {} documents from knowledge base: {}", validDocumentIds.size(), knowledgeBaseId);
+                logger.info("Successfully deleted {} documents from knowledge base: {}",
+                            validDocumentIds.size(),
+                            knowledgeBaseId);
             } else {
                 logger.warn("No valid documents found to delete in knowledge base: {}", knowledgeBaseId);
             }
@@ -117,16 +121,16 @@ public class VectorStoreServiceImpl implements VectorStoreService {
         try {
             // 查询属于该文件的所有文档ID
             String sql = String.format(
-                "SELECT id FROM %s.%s WHERE metadata->>'file_id' = ? AND metadata->>'knowledge_base_id' = ?",
-                schemaName, tableName
+                    "SELECT id FROM %s.%s WHERE metadata->>'file_id' = ? AND metadata->>'knowledge_base_id' = ?",
+                    schemaName, tableName
             );
-            
+
             List<String> documentIds = jdbcTemplate.queryForList(sql, String.class, fileId, knowledgeBaseId);
-            
+
             if (!CollectionUtils.isEmpty(documentIds)) {
                 vectorStore.delete(documentIds);
-                logger.info("Successfully deleted {} documents for file {} from knowledge base: {}", 
-                    documentIds.size(), fileId, knowledgeBaseId);
+                logger.info("Successfully deleted {} documents for file {} from knowledge base: {}",
+                            documentIds.size(), fileId, knowledgeBaseId);
             } else {
                 logger.info("No documents found for file {} in knowledge base: {}", fileId, knowledgeBaseId);
             }
@@ -150,20 +154,23 @@ public class VectorStoreServiceImpl implements VectorStoreService {
         try {
             // 使用基础的相似性搜索，然后手动过滤知识库
             List<Document> allResults = vectorStore.similaritySearch(
-                SearchRequest.builder()
-                    .query(query)
-                    .topK(topK * 2) // 获取更多结果以便过滤
-                    .similarityThreshold(similarityThreshold)
-                    .build()
+                    SearchRequest.builder()
+                                 .query(query)
+                                 .topK(topK * 2) // 获取更多结果以便过滤
+                                 .similarityThreshold(similarityThreshold)
+                                 .build()
             );
 
             // 手动过滤属于指定知识库的文档
             List<Document> filteredResults = allResults.stream()
-                    .filter(doc -> knowledgeBaseId.equals(doc.getMetadata().get("knowledge_base_id")))
-                    .limit(topK)
-                    .collect(Collectors.toList());
+                                                       .filter(doc -> knowledgeBaseId.equals(doc.getMetadata()
+                                                                                                .get("knowledge_base_id")))
+                                                       .limit(topK)
+                                                       .collect(Collectors.toList());
 
-            logger.debug("Similarity search returned {} results for knowledge base: {}", filteredResults.size(), knowledgeBaseId);
+            logger.debug("Similarity search returned {} results for knowledge base: {}",
+                         filteredResults.size(),
+                         knowledgeBaseId);
             return filteredResults;
 
         } catch (Exception e) {
@@ -176,7 +183,10 @@ public class VectorStoreServiceImpl implements VectorStoreService {
      * 向量搜索
      */
     @Override
-    public List<Document> vectorSearch(List<Double> queryEmbedding, String knowledgeBaseId, int topK, double similarityThreshold) {
+    public List<Document> vectorSearch(List<Double> queryEmbedding,
+                                       String knowledgeBaseId,
+                                       int topK,
+                                       double similarityThreshold) {
         if (CollectionUtils.isEmpty(queryEmbedding) || !StringUtils.hasText(knowledgeBaseId)) {
             logger.warn("QueryEmbedding or knowledgeBaseId is empty, returning empty results");
             return Collections.emptyList();
@@ -210,10 +220,13 @@ public class VectorStoreServiceImpl implements VectorStoreService {
 
             // 手动过滤属于指定知识库的文档
             List<Document> filteredResults = results.stream()
-                    .filter(doc -> knowledgeBaseId.equals(doc.getMetadata().get("knowledge_base_id")))
-                    .collect(Collectors.toList());
+                                                    .filter(doc -> knowledgeBaseId.equals(doc.getMetadata()
+                                                                                             .get("knowledge_base_id")))
+                                                    .collect(Collectors.toList());
 
-            logger.debug("Advanced search returned {} results for knowledge base: {}", filteredResults.size(), knowledgeBaseId);
+            logger.debug("Advanced search returned {} results for knowledge base: {}",
+                         filteredResults.size(),
+                         knowledgeBaseId);
             return filteredResults;
 
         } catch (Exception e) {
@@ -233,10 +246,10 @@ public class VectorStoreServiceImpl implements VectorStoreService {
 
         try {
             String sql = String.format(
-                "SELECT COUNT(*) FROM %s.%s WHERE metadata->>'knowledge_base_id' = ? LIMIT 1",
-                schemaName, tableName
+                    "SELECT COUNT(*) FROM %s.%s WHERE metadata->>'knowledge_base_id' = ? LIMIT 1",
+                    schemaName, tableName
             );
-            
+
             Integer count = jdbcTemplate.queryForObject(sql, Integer.class, knowledgeBaseId);
             return count != null && count > 0;
 
@@ -265,10 +278,10 @@ public class VectorStoreServiceImpl implements VectorStoreService {
             metadata.put("created_at", System.currentTimeMillis());
 
             Document markerDocument = Document.builder()
-                    .id("kb_marker_" + knowledgeBaseId)
-                    .text("Knowledge Base: " + knowledgeBaseId)
-                    .metadata(metadata)
-                    .build();
+                                              .id("kb_marker_" + knowledgeBaseId)
+                                              .text("Knowledge Base: " + knowledgeBaseId)
+                                              .metadata(metadata)
+                                              .build();
 
             vectorStore.add(List.of(markerDocument));
             logger.info("Successfully created knowledge base: {} with description: {}", knowledgeBaseId, description);
@@ -293,15 +306,17 @@ public class VectorStoreServiceImpl implements VectorStoreService {
         try {
             // 查询该知识库下的所有文档ID
             String sql = String.format(
-                "SELECT id FROM %s.%s WHERE metadata->>'knowledge_base_id' = ?",
-                schemaName, tableName
+                    "SELECT id FROM %s.%s WHERE metadata->>'knowledge_base_id' = ?",
+                    schemaName, tableName
             );
-            
+
             List<String> documentIds = jdbcTemplate.queryForList(sql, String.class, knowledgeBaseId);
-            
+
             if (!CollectionUtils.isEmpty(documentIds)) {
                 vectorStore.delete(documentIds);
-                logger.info("Successfully deleted knowledge base: {} with {} documents", knowledgeBaseId, documentIds.size());
+                logger.info("Successfully deleted knowledge base: {} with {} documents",
+                            knowledgeBaseId,
+                            documentIds.size());
             } else {
                 logger.info("Knowledge base {} is empty or does not exist", knowledgeBaseId);
             }
@@ -323,12 +338,12 @@ public class VectorStoreServiceImpl implements VectorStoreService {
 
         try {
             String sql = String.format(
-                "SELECT COUNT(*) as doc_count, " +
-                "COALESCE(SUM(LENGTH(content)), 0) as total_size, " +
-                "MIN(metadata->>'created_at') as created_at, " +
-                "MAX(metadata->>'created_at') as updated_at " +
-                "FROM %s.%s WHERE metadata->>'knowledge_base_id' = ?",
-                schemaName, tableName
+                    "SELECT COUNT(*) as doc_count, " +
+                    "COALESCE(SUM(LENGTH(content)), 0) as total_size, " +
+                    "MIN(metadata->>'created_at') as created_at, " +
+                    "MAX(metadata->>'created_at') as updated_at " +
+                    "FROM %s.%s WHERE metadata->>'knowledge_base_id' = ?",
+                    schemaName, tableName
             );
 
             return jdbcTemplate.queryForObject(sql, (rs, rowNum) -> {
@@ -336,7 +351,7 @@ public class VectorStoreServiceImpl implements VectorStoreService {
                 long totalSize = rs.getLong("total_size");
                 String createdAt = rs.getString("created_at");
                 String updatedAt = rs.getString("updated_at");
-                
+
                 return new KnowledgeBaseStats(knowledgeBaseId, documentCount, totalSize, createdAt, updatedAt);
             }, knowledgeBaseId);
 
@@ -356,12 +371,12 @@ public class VectorStoreServiceImpl implements VectorStoreService {
 
         try {
             String placeholders = documentIds.stream()
-                    .map(id -> "?")
-                    .collect(Collectors.joining(","));
+                                             .map(id -> "?")
+                                             .collect(Collectors.joining(","));
 
             String sql = String.format(
-                "SELECT id FROM %s.%s WHERE id IN (%s) AND metadata->>'knowledge_base_id' = ?",
-                schemaName, tableName, placeholders
+                    "SELECT id FROM %s.%s WHERE id IN (%s) AND metadata->>'knowledge_base_id' = ?",
+                    schemaName, tableName, placeholders
             );
 
             List<Object> params = new ArrayList<>(documentIds);

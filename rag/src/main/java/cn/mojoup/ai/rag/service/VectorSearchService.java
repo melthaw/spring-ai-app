@@ -26,8 +26,4 @@ public interface VectorSearchService {
                                          Double threshold,
                                          Boolean rerank);
 
-    /**
-     * 重排序文档
-     */
-    List<DocumentSegment> rerankDocuments(List<DocumentSegment> documents, String query);
 } 
