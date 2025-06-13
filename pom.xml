@@ -22,12 +22,13 @@
         <spring-security.version>6.4.4</spring-security.version>
         <spring-framework.version>6.2.5</spring-framework.version>
         <spring-boot.version>3.4.4</spring-boot.version>
-        <spring-cloud.version>2024.0.1</spring-cloud.version>
         <spring-ai.version>1.0.0</spring-ai.version>
-        <spring-cloud-alibaba.version>2023.0.3.2</spring-cloud-alibaba.version>
         <springdoc.version>2.3.0</springdoc.version>
-
         <lombok.version>1.18.30</lombok.version>
+        <postgresql.version>42.7.2</postgresql.version>
+        <druid.version>1.2.21</druid.version>
+        <minio.version>8.2.1</minio.version>
+        <commons-io.version>2.15.1</commons-io.version>
     </properties>
 
     <dependencyManagement>
@@ -41,24 +42,6 @@
                 <scope>import</scope>
             </dependency>
 
-            <!-- Spring Cloud -->
-            <dependency>
-                <groupId>org.springframework.cloud</groupId>
-                <artifactId>spring-cloud-dependencies</artifactId>
-                <version>${spring-cloud.version}</version>
-                <type>pom</type>
-                <scope>import</scope>
-            </dependency>
-
-            <!-- Spring Cloud Alibaba -->
-            <dependency>
-                <groupId>com.alibaba.cloud</groupId>
-                <artifactId>spring-cloud-alibaba-dependencies</artifactId>
-                <version>${spring-cloud-alibaba.version}</version>
-                <type>pom</type>
-                <scope>import</scope>
-            </dependency>
-
             <!-- Spring AI -->
             <dependency>
                 <groupId>org.springframework.ai</groupId>
@@ -68,11 +51,40 @@
                 <scope>import</scope>
             </dependency>
 
-            <!-- Lombok -->
+            <dependency>
+                <groupId>org.springdoc</groupId>
+                <artifactId>springdoc-openapi-starter-webmvc-ui</artifactId>
+                <version>${springdoc.version}</version>
+            </dependency>
+
+            <dependency>
+                <groupId>com.alibaba</groupId>
+                <artifactId>druid-spring-boot-3-starter</artifactId>
+                <version>${druid.version}</version>
+            </dependency>
+
+            <dependency>
+                <groupId>org.postgresql</groupId>
+                <artifactId>postgresql</artifactId>
+                <version>${postgresql.version}</version>
+            </dependency>
+
             <dependency>
                 <groupId>org.projectlombok</groupId>
                 <artifactId>lombok</artifactId>
                 <version>${lombok.version}</version>
+            </dependency>
+
+            <dependency>
+                <groupId>io.minio</groupId>
+                <artifactId>minio</artifactId>
+                <version>${minio.version}</version>
+            </dependency>
+
+            <dependency>
+                <groupId>commons-io</groupId>
+                <artifactId>commons-io</artifactId>
+                <version>${commons-io.version}</version>
             </dependency>
 
             <dependency>

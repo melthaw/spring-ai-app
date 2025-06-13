@@ -1,0 +1,45 @@
+version: '3.3'
+services:
+
+  pgv:
+    image: pgvector/pgvector:0.8.0-pg15
+    container_name: pgv
+    ports:
+      - 5431:5432
+    networks:
+      - spring-ai-app
+    environment:
+      POSTGRES_USER: springai_user
+      POSTGRES_PASSWORD: springai_pwd
+      POSTGRES_DB: springai
+    volumes:
+      - ./.tmp/pgv/data:/var/lib/postgresql/data
+    healthcheck:
+      test: ['CMD', 'pg_isready', '-U', 'springai_user', '-d', 'springai']
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+
+  postgres:
+    image: postgres:16
+    container_name: postgres_db
+    networks:
+      - spring-ai-app
+    ports:
+      - "5432:5432"
+    environment:
+      POSTGRES_USER: springai_user
+      POSTGRES_PASSWORD: springai_pwd
+      POSTGRES_DB: springai
+    volumes:
+      - ./.tmp/pg/data:/var/lib/postgresql/data
+    healthcheck:
+      test: ['CMD', 'pg_isready', '-U', 'springai_user', '-d', 'springai']
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+
+networks:
+  spring-ai-app:

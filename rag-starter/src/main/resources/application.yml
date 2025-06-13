@@ -1,0 +1,36 @@
+app:
+  name: spring-ai-rag-app
+
+server:
+  port: 8080
+  server:
+    whitelabel:
+      enabled: false
+  servlet:
+    context-path: /
+  tomcat:
+    uri-encoding: UTF-8
+    accept-count: 1000
+    threads:
+      max: 800
+      min-spare: 100
+
+# 日志配置
+logging:
+  level:
+    cn.mojoup: debug
+    org.springframework: warn
+    org.springframework.ai.chat.client: debug
+    okhttp3: debug
+
+spring:
+  profiles:
+    active: dev
+  servlet:
+    multipart:
+      max-file-size: 10MB
+      max-request-size: 20MB
+  mvc:
+    pathmatch:
+      matching-strategy: ant-path-matcher
+
