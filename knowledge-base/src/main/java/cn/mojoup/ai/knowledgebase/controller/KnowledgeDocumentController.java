@@ -1,5 +1,6 @@
 package cn.mojoup.ai.knowledgebase.controller;
 
+import cn.mojoup.ai.knowledgebase.domain.DocumentSearchRequest;
 import cn.mojoup.ai.knowledgebase.domain.DocumentUploadRequest;
 import cn.mojoup.ai.knowledgebase.domain.KnowledgeDocument;
 import cn.mojoup.ai.knowledgebase.domain.DocumentEmbedding;
@@ -14,6 +15,8 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
+import org.springframework.data.web.PageableDefault;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
@@ -329,6 +332,24 @@ public class KnowledgeDocumentController {
                             "success", false,
                             "message", "重试失败: " + e.getMessage()
                     ));
+        }
+    }
+
+    @PostMapping("/search-advanced")
+    @Operation(summary = "高级搜索文档", description = "使用复杂条件搜索文档")
+    public ResponseEntity<Page<KnowledgeDocument>> searchDocumentsAdvanced(
+            @RequestBody DocumentSearchRequest searchRequest,
+            @PageableDefault(size = 20, sort = "createTime", direction = Sort.Direction.DESC) Pageable pageable) {
+
+        log.info("高级搜索文档: kbId={}, keyword={}", searchRequest.getKbId(), searchRequest.getKeyword());
+
+        try {
+            Page<KnowledgeDocument> result = documentService.searchDocumentsAdvanced(searchRequest, pageable);
+            return ResponseEntity.ok(result);
+
+        } catch (Exception e) {
+            log.error("高级搜索文档失败", e);
+            return ResponseEntity.internalServerError().build();
         }
     }
 } 

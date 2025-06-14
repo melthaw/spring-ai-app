@@ -1,3 +1,5 @@
+![](./cover.jpeg)
+
 # Spring AI RAG 应用
 
 > 声明：

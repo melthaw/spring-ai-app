@@ -1,6 +1,7 @@
 package cn.mojoup.ai.knowledgebase.repository;
 
 import cn.mojoup.ai.knowledgebase.domain.KnowledgeDocument;
+import cn.mojoup.ai.knowledgebase.repository.custom.DocumentRepositoryCustom;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -18,7 +19,7 @@ import java.util.Optional;
  * @author matt
  */
 @Repository
-public interface KnowledgeDocumentRepository extends JpaRepository<KnowledgeDocument, Long> {
+public interface KnowledgeDocumentRepository extends JpaRepository<KnowledgeDocument, Long>, DocumentRepositoryCustom {
 
     /**
      * 根据文件ID查找文档
@@ -172,4 +173,29 @@ public interface KnowledgeDocumentRepository extends JpaRepository<KnowledgeDocu
      */
     @Query("SELECT COALESCE(MAX(d.sortOrder), 0) FROM KnowledgeDocument d WHERE d.category.id = :categoryId")
     Integer getMaxSortOrderByCategoryId(@Param("categoryId") Long categoryId);
+
+    /**
+     * 统计分类下的文档数量
+     */
+    Long countByCategoryId(Long categoryId);
+
+    /**
+     * 统计知识库中指定状态的文档数量
+     */
+    Long countByKbIdAndStatus(Long kbId, List<KnowledgeDocument.DocumentStatus> statuses);
+
+    /**
+     * 根据文件路径查找文档
+     */
+    Optional<KnowledgeDocument> findByFilePath(String filePath);
+
+    /**
+     * 根据文件MD5查找文档
+     */
+    Optional<KnowledgeDocument> findByFileMd5(String fileMd5);
+
+    /**
+     * 检查文档是否已存在
+     */
+    boolean existsByKbIdAndTitleAndCategoryId(Long kbId, String title, Long categoryId);
 } 

@@ -1,5 +1,6 @@
 package cn.mojoup.ai.knowledgebase.service;
 
+import cn.mojoup.ai.knowledgebase.domain.DocumentSearchRequest;
 import cn.mojoup.ai.knowledgebase.domain.DocumentUploadRequest;
 import cn.mojoup.ai.knowledgebase.domain.KnowledgeDocument;
 import cn.mojoup.ai.knowledgebase.domain.DocumentEmbedding;
@@ -162,6 +163,11 @@ public interface KnowledgeDocumentService {
      * 获取文档的下载链接
      */
     String getDocumentDownloadUrl(Long documentId);
+
+    /**
+     * 使用搜索请求查询文档（高级搜索）
+     */
+    Page<KnowledgeDocument> searchDocumentsAdvanced(DocumentSearchRequest searchRequest, Pageable pageable);
 
     /**
      * 文档统计信息

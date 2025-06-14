@@ -2,6 +2,7 @@ package cn.mojoup.ai.knowledgebase.controller;
 
 import cn.mojoup.ai.knowledgebase.domain.CreateKnowledgeBaseRequest;
 import cn.mojoup.ai.knowledgebase.domain.KnowledgeBase;
+import cn.mojoup.ai.knowledgebase.domain.KnowledgeBaseSearchRequest;
 import cn.mojoup.ai.knowledgebase.service.KnowledgeBaseService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
@@ -13,6 +14,8 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
+import org.springframework.data.web.PageableDefault;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
@@ -270,5 +273,23 @@ public class KnowledgeBaseController {
                 "available", available,
                 "message", available ? "编码可用" : "编码已被使用"
         ));
+    }
+
+    @PostMapping("/search-advanced")
+    @Operation(summary = "高级搜索知识库", description = "使用复杂条件搜索知识库")
+    public ResponseEntity<Page<KnowledgeBase>> searchKnowledgeBasesAdvanced(
+            @RequestBody KnowledgeBaseSearchRequest searchRequest,
+            @PageableDefault(size = 20, sort = "createTime", direction = Sort.Direction.DESC) Pageable pageable) {
+        
+        log.info("高级搜索知识库: keyword={}, ownerId={}", searchRequest.getKeyword(), searchRequest.getOwnerId());
+        
+        try {
+            Page<KnowledgeBase> result = knowledgeBaseService.searchKnowledgeBasesAdvanced(searchRequest, pageable);
+            return ResponseEntity.ok(result);
+            
+        } catch (Exception e) {
+            log.error("高级搜索知识库失败", e);
+            return ResponseEntity.internalServerError().build();
+        }
     }
 } 

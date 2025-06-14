@@ -1,6 +1,7 @@
 package cn.mojoup.ai.knowledgebase.repository;
 
 import cn.mojoup.ai.knowledgebase.domain.KnowledgeBase;
+import cn.mojoup.ai.knowledgebase.repository.custom.KnowledgeBaseRepositoryCustom;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -18,7 +19,7 @@ import java.util.Optional;
  * @author matt
  */
 @Repository
-public interface KnowledgeBaseRepository extends JpaRepository<KnowledgeBase, Long> {
+public interface KnowledgeBaseRepository extends JpaRepository<KnowledgeBase, Long>, KnowledgeBaseRepositoryCustom {
 
     /**
      * 根据知识库编码查找

@@ -312,4 +312,10 @@ public class KnowledgeDocumentServiceImpl implements KnowledgeDocumentService {
     @Override public KnowledgeDocument copyDocumentToCategory(Long documentId, Long targetCategoryId, String operatorId) { return null; }
     @Override public String exportDocumentContent(Long documentId) { return null; }
     @Override public String getDocumentDownloadUrl(Long documentId) { return null; }
+
+    @Override
+    public Page<KnowledgeDocument> searchDocumentsAdvanced(DocumentSearchRequest searchRequest, Pageable pageable) {
+        log.info("高级搜索文档: kbId={}, keyword={}", searchRequest.getKbId(), searchRequest.getKeyword());
+        return documentRepository.searchDocuments(searchRequest, pageable);
+    }
 } 

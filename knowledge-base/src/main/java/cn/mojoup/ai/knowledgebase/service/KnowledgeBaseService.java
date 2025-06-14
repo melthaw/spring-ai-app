@@ -96,6 +96,11 @@ public interface KnowledgeBaseService {
     KnowledgeBaseStats getKnowledgeBaseStats(Long kbId);
 
     /**
+     * 高级搜索知识库
+     */
+    Page<KnowledgeBase> searchKnowledgeBasesAdvanced(KnowledgeBaseSearchRequest searchRequest, Pageable pageable);
+
+    /**
      * 知识库统计信息
      */
     class KnowledgeBaseStats {
